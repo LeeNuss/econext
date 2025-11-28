@@ -154,4 +154,73 @@ CONTROLLER_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:ip-network",
     ),
+    # I/O state sensors (diagnostic)
+    EconetSensorEntityDescription(
+        key="outputs",
+        param_id="81",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:export",
+    ),
+    EconetSensorEntityDescription(
+        key="inputs",
+        param_id="82",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:import",
+    ),
+    # Work state sensors (diagnostic)
+    EconetSensorEntityDescription(
+        key="work_state_1",
+        param_id="161",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:state-machine",
+    ),
+    EconetSensorEntityDescription(
+        key="work_state_2",
+        param_id="162",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:state-machine",
+    ),
+    EconetSensorEntityDescription(
+        key="work_state_3",
+        param_id="163",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:state-machine",
+    ),
+    EconetSensorEntityDescription(
+        key="work_state_4",
+        param_id="164",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:state-machine",
+    ),
+    # Alarm sensors (diagnostic)
+    EconetSensorEntityDescription(
+        key="alarm_bits_1",
+        param_id="1042",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    ),
+    EconetSensorEntityDescription(
+        key="alarm_bits_2",
+        param_id="1043",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    ),
+    EconetSensorEntityDescription(
+        key="alarm_bits_3",
+        param_id="1044",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    ),
+    EconetSensorEntityDescription(
+        key="alarm_bits_4",
+        param_id="1045",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    ),
+    EconetSensorEntityDescription(
+        key="alarm_bits_5",
+        param_id="1046",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    ),
 )

@@ -74,6 +74,39 @@
       },
       "lan_ip_address": {
         "name": "LAN IP address"
+      },
+      "outputs": {
+        "name": "Outputs"
+      },
+      "inputs": {
+        "name": "Inputs"
+      },
+      "work_state_1": {
+        "name": "Work state 1"
+      },
+      "work_state_2": {
+        "name": "Work state 2"
+      },
+      "work_state_3": {
+        "name": "Work state 3"
+      },
+      "work_state_4": {
+        "name": "Work state 4"
+      },
+      "alarm_bits_1": {
+        "name": "Alarm bits 1"
+      },
+      "alarm_bits_2": {
+        "name": "Alarm bits 2"
+      },
+      "alarm_bits_3": {
+        "name": "Alarm bits 3"
+      },
+      "alarm_bits_4": {
+        "name": "Alarm bits 4"
+      },
+      "alarm_bits_5": {
+        "name": "Alarm bits 5"
       }
     }
   }
