@@ -330,7 +330,7 @@ CONTROLLER_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
 DHW_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
     # Temperature sensors
     EconetSensorEntityDescription(
-        key="dhw_temperature",
+        key="temperature",
         param_id="61",
         device_type=DeviceType.DHW,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -340,7 +340,7 @@ DHW_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
         precision=1,
     ),
     EconetSensorEntityDescription(
-        key="dhw_setpoint_calculated",
+        key="setpoint_calculated",
         param_id="134",
         device_type=DeviceType.DHW,
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -356,7 +356,7 @@ DHW_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
 DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     # DHW target temperature
     EconetNumberEntityDescription(
-        key="dhw_target_temperature",
+        key="target_temperature",
         param_id="103",
         device_type=DeviceType.DHW,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -366,7 +366,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     ),
     # DHW hysteresis
     EconetNumberEntityDescription(
-        key="dhw_hysteresis",
+        key="hysteresis",
         param_id="104",
         device_type=DeviceType.DHW,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -376,7 +376,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     ),
     # DHW max temperature
     EconetNumberEntityDescription(
-        key="dhw_max_temperature",
+        key="max_temperature",
         param_id="108",
         device_type=DeviceType.DHW,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -386,7 +386,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     ),
     # DHW max temp hysteresis
     EconetNumberEntityDescription(
-        key="dhw_max_temp_hysteresis",
+        key="max_temp_hysteresis",
         param_id="112",
         device_type=DeviceType.DHW,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -396,7 +396,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     ),
     # DHW load time
     EconetNumberEntityDescription(
-        key="dhw_load_time",
+        key="load_time",
         param_id="113",
         device_type=DeviceType.DHW,
         icon="mdi:timer",
@@ -405,7 +405,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
     ),
     # Legionella settings
     EconetNumberEntityDescription(
-        key="dhw_legionella_temperature",
+        key="legionella_temperature",
         param_id="136",
         device_type=DeviceType.DHW,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -414,7 +414,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_max_value=80,
     ),
     EconetNumberEntityDescription(
-        key="dhw_legionella_hour",
+        key="legionella_hour",
         param_id="138",
         device_type=DeviceType.DHW,
         icon="mdi:clock",
@@ -428,7 +428,7 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
 DHW_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
     # Legionella protection
     EconetSwitchEntityDescription(
-        key="dhw_legionella_start",
+        key="legionella_start",
         param_id="135",
         device_type=DeviceType.DHW,
         icon="mdi:bacteria",

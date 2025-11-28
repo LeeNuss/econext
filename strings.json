@@ -105,11 +105,11 @@
       "alarm_bits_5": {
         "name": "Alarm bits 5"
       },
-      "dhw_temperature": {
-        "name": "DHW temperature"
+      "temperature": {
+        "name": "Temperature"
       },
-      "dhw_setpoint_calculated": {
-        "name": "DHW setpoint calculated"
+      "setpoint_calculated": {
+        "name": "Setpoint calculated"
       }
     },
     "number": {
@@ -119,26 +119,26 @@
       "summer_mode_off": {
         "name": "Summer mode off"
       },
-      "dhw_target_temperature": {
-        "name": "DHW target temperature"
+      "target_temperature": {
+        "name": "Target temperature"
       },
-      "dhw_hysteresis": {
-        "name": "DHW hysteresis"
+      "hysteresis": {
+        "name": "Hysteresis"
       },
-      "dhw_max_temperature": {
-        "name": "DHW max temperature"
+      "max_temperature": {
+        "name": "Max temperature"
       },
-      "dhw_max_temp_hysteresis": {
-        "name": "DHW max temp hysteresis"
+      "max_temp_hysteresis": {
+        "name": "Max temp hysteresis"
       },
-      "dhw_load_time": {
-        "name": "DHW load time"
+      "load_time": {
+        "name": "Load time"
       },
-      "dhw_legionella_temperature": {
-        "name": "DHW legionella temperature"
+      "legionella_temperature": {
+        "name": "Legionella temperature"
       },
-      "dhw_legionella_hour": {
-        "name": "DHW legionella hour"
+      "legionella_hour": {
+        "name": "Legionella hour"
       }
     },
     "select": {
@@ -155,8 +155,8 @@
       "cooling_support": {
         "name": "Cooling support"
       },
-      "dhw_legionella_start": {
-        "name": "DHW legionella start"
+      "legionella_start": {
+        "name": "Legionella start"
       }
     }
   }
