@@ -10,6 +10,16 @@
           "username": "Username",
           "password": "Password"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure ecoNET Device",
+        "description": "Update the connection details for your ecoNET device.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -18,7 +28,9 @@
       "unknown": "Unexpected error occurred"
     },
     "abort": {
-      "already_configured": "Device is already configured"
+      "already_configured": "Device is already configured",
+      "reconfigure_successful": "Configuration updated successfully",
+      "reconfigure_instead": "Use the reconfigure option to change connection settings"
     }
   },
   "entity": {
