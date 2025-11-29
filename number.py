@@ -66,7 +66,7 @@ async def async_setup_entry(
             # Create number entities for this circuit
             for description in CIRCUIT_NUMBERS:
                 # Map the number key to the appropriate circuit parameter
-                param_id = _get_circuit_param_id(circuit, description.key)
+                param_id = _get_circuit_param_id(circuit, description.key, coordinator)
                 if param_id and coordinator.get_param(param_id) is not None:
                     # Create a copy of the description with the actual param_id
                     circuit_desc = EconetNumberEntityDescription(
@@ -94,8 +94,29 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-def _get_circuit_param_id(circuit, number_key: str) -> str | None:
-    """Get the parameter ID for a circuit number entity based on its key."""
+def _get_circuit_param_id(circuit, number_key: str, coordinator: EconetNextCoordinator | None = None) -> str | None:
+    """Get the parameter ID for a circuit number entity based on its key.
+
+    For heating_curve, the param is determined by circuit type:
+    - Type 1 (radiator): uses curve_radiator_param
+    - Type 2 (UFH): uses curve_floor_param
+    - Type 3 (fan coil): uses curve_fancoil_param (if exists, else curve_floor_param)
+    """
+    # For heating_curve, determine which param to use based on circuit type
+    if number_key == "heating_curve" and coordinator:
+        type_param = coordinator.get_param(circuit.type_settings_param)
+        if type_param:
+            circuit_type = type_param.get("value", 1)
+            if circuit_type == 1:  # Radiator
+                return circuit.curve_radiator_param
+            elif circuit_type == 2:  # UFH (floor heating)
+                return circuit.curve_floor_param
+            elif circuit_type == 3:  # Fan coil
+                return circuit.curve_fancoil_param
+        # Default to radiator if type unknown
+        return circuit.curve_radiator_param
+
+    # Standard mappings
     mapping = {
         "comfort_temp": circuit.comfort_param,
         "eco_temp": circuit.eco_param,
@@ -105,10 +126,8 @@ def _get_circuit_param_id(circuit, number_key: str) -> str | None:
         "base_temp": circuit.base_temp_param,
         "temp_reduction": circuit.temp_reduction_param,
         "curve_multiplier": circuit.curve_multiplier_param,
-        "curve_radiator": circuit.curve_radiator_param,
-        "curve_floor": circuit.curve_floor_param,
         "curve_shift": circuit.curve_shift_param,
-        "user_correction": circuit.user_correction_param,
+        "room_temp_correction": circuit.room_temp_correction_param,
     }
     return mapping.get(number_key)
 

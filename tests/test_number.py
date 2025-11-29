@@ -191,7 +191,7 @@ class TestCircuitNumbers:
         """Test circuit number definitions are correct."""
         from econet_next.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 12
+        assert len(CIRCUIT_NUMBERS) == 10
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
@@ -201,11 +201,9 @@ class TestCircuitNumbers:
             "max_temp_heat",
             "base_temp",
             "temp_reduction",
-            "curve_multiplier",
-            "curve_radiator",
-            "curve_floor",
+            "heating_curve",
             "curve_shift",
-            "user_correction",
+            "room_temp_correction",
         }
         assert keys == expected_keys
 
@@ -275,31 +273,31 @@ class TestCircuitNumbers:
         assert number.native_min_value == 0.0
         assert number.native_max_value == 5.0
 
-    def test_circuit_curve_multiplier_number(self, coordinator: EconetNextCoordinator) -> None:
-        """Test circuit curve multiplier number."""
+    def test_circuit_heating_curve_radiator_type(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit heating curve for radiator type (type=1)."""
+        # Circuit 1 has type=1 (radiator), so heating_curve should use curve_radiator_param
         description = EconetNumberEntityDescription(
-            key="curve_multiplier",
-            param_id="313",  # Circuit2Multiplier
+            key="heating_curve",
+            param_id="273",  # Circuit1CurveRadiator (for type=1)
             device_type="circuit",
-            icon="mdi:chart-bell-curve",
+            icon="mdi:chart-line",
             native_min_value=0.0,
-            native_max_value=10.0,
+            native_max_value=4.0,
             native_step=0.1,
         )
 
-        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+        number = EconetNextNumber(coordinator, description, device_id="circuit_1")
 
-        # From fixture, param 313 = 4.0
-        assert number.native_value == 4.0
-        assert number.native_min_value == 0.0
-        assert number.native_max_value == 10.0
-        assert number._attr_native_step == 0.1
+        # From fixture, param 273 = 0.5
+        assert number.native_value == 0.5
+        assert number._attr_icon == "mdi:chart-line"
 
-    def test_circuit_curve_radiator_number(self, coordinator: EconetNextCoordinator) -> None:
-        """Test circuit radiator curve number."""
+    def test_circuit_heating_curve_ufh_type(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit heating curve for UFH type (type=2)."""
+        # Circuit 2 has type=2 (UFH), so heating_curve should use curve_floor_param
         description = EconetNumberEntityDescription(
-            key="curve_radiator",
-            param_id="323",  # Circuit2CurveRadiator
+            key="heating_curve",
+            param_id="324",  # Circuit2CurveFloor (for type=2)
             device_type="circuit",
             icon="mdi:chart-line",
             native_min_value=0.0,
@@ -309,8 +307,8 @@ class TestCircuitNumbers:
 
         number = EconetNextNumber(coordinator, description, device_id="circuit_2")
 
-        # From fixture, param 323 = 1.2
-        assert number.native_value == 1.2
+        # From fixture, param 324 = 0.5
+        assert number.native_value == 0.5
         assert number._attr_icon == "mdi:chart-line"
 
     def test_circuit_curve_shift_number(self, coordinator: EconetNextCoordinator) -> None:

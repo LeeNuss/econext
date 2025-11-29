@@ -507,6 +507,19 @@ DHW_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
 # Circuit (Heating Zones) Devices - Circuits 1-7
 # ============================================================================
 
+# Circuit type mapping (CircuitXTypeSettings parameter)
+CIRCUIT_TYPE_MAPPING = {
+    1: "radiator",
+    2: "ufh",  # Underfloor heating
+    3: "fan_coil",
+}
+
+CIRCUIT_TYPE_OPTIONS = list(CIRCUIT_TYPE_MAPPING.values())
+
+CIRCUIT_TYPE_REVERSE = {
+    value: key for key, value in CIRCUIT_TYPE_MAPPING.items()
+}
+
 # Circuit sensors - read only temperature sensors
 # Note: These use a function-based approach since each circuit has the same pattern
 # Circuit-specific param IDs are defined in climate.py CIRCUITS dict
@@ -624,30 +637,10 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=0,
         native_max_value=20,
     ),
-    # Curve multiplier
+    # Heating curve - dynamically uses radiator, floor, or fan coil param based on circuit type
     EconetNumberEntityDescription(
-        key="curve_multiplier",
-        param_id="",  # Set dynamically per circuit
-        device_type=DeviceType.CIRCUIT,
-        icon="mdi:chart-bell-curve",
-        native_min_value=0.0,
-        native_max_value=10.0,
-        native_step=0.1,
-    ),
-    # Radiator heating curve
-    EconetNumberEntityDescription(
-        key="curve_radiator",
-        param_id="",  # Set dynamically per circuit
-        device_type=DeviceType.CIRCUIT,
-        icon="mdi:chart-line",
-        native_min_value=0.0,
-        native_max_value=4.0,
-        native_step=0.1,
-    ),
-    # Floor heating curve
-    EconetNumberEntityDescription(
-        key="curve_floor",
-        param_id="",  # Set dynamically per circuit
+        key="heating_curve",
+        param_id="",  # Set dynamically per circuit type
         device_type=DeviceType.CIRCUIT,
         icon="mdi:chart-line",
         native_min_value=0.0,
@@ -672,5 +665,20 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         icon="mdi:tune",
         native_min_value=-10,
         native_max_value=10,
+    ),
+)
+
+
+# Circuit select entities - editable mode selections
+CIRCUIT_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
+    # Circuit type (radiator, UFH, or fan coil)
+    EconetSelectEntityDescription(
+        key="circuit_type",
+        param_id="",  # Set dynamically per circuit (CircuitXTypeSettings)
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:heating-coil",
+        options=CIRCUIT_TYPE_OPTIONS,
+        value_map=CIRCUIT_TYPE_MAPPING,
+        reverse_map=CIRCUIT_TYPE_REVERSE,
     ),
 )

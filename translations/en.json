@@ -175,14 +175,8 @@
       "temp_reduction": {
         "name": "Temperature reduction"
       },
-      "curve_multiplier": {
-        "name": "Curve Multiplier"
-      },
-      "curve_radiator": {
-        "name": "Radiator heating curve"
-      },
-      "curve_floor": {
-        "name": "Floor heating curve"
+      "heating_curve": {
+        "name": "Heating curve"
       },
       "curve_shift": {
         "name": "Curve shift"
@@ -218,6 +212,14 @@
           "thursday": "Thursday",
           "friday": "Friday",
           "saturday": "Saturday"
+        }
+      },
+      "circuit_type": {
+        "name": "Circuit type",
+        "state": {
+          "radiator": "Radiator",
+          "ufh": "Underfloor Heating",
+          "fan_coil": "Fan Coil"
         }
       }
     },

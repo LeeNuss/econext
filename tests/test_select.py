@@ -264,3 +264,81 @@ class TestEconetNextSelect:
 
         coordinator.api.async_set_param.assert_not_called()
         coordinator.async_request_refresh.assert_not_called()
+
+
+class TestCircuitTypeSelect:
+    """Test circuit type select functionality."""
+
+    def test_circuit_type_select_definitions(self) -> None:
+        """Test circuit type select definitions are correct."""
+        from econet_next.const import CIRCUIT_SELECTS, CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, DeviceType
+
+        assert len(CIRCUIT_SELECTS) == 1
+        circuit_type = CIRCUIT_SELECTS[0]
+
+        assert circuit_type.key == "circuit_type"
+        assert circuit_type.options == CIRCUIT_TYPE_OPTIONS
+        assert circuit_type.value_map == CIRCUIT_TYPE_MAPPING
+        assert circuit_type.device_type == DeviceType.CIRCUIT
+
+    def test_circuit_type_radiator(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit type select for radiator (type=1)."""
+        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+
+        # Circuit 1 has type=1 (radiator)
+        description = EconetSelectEntityDescription(
+            key="circuit_type",
+            param_id="269",  # Circuit1TypeSettings
+            device_type="circuit",
+            icon="mdi:heating-coil",
+            options=CIRCUIT_TYPE_OPTIONS,
+            value_map=CIRCUIT_TYPE_MAPPING,
+            reverse_map=CIRCUIT_TYPE_REVERSE,
+        )
+
+        select = EconetNextSelect(coordinator, description, device_id="circuit_1")
+
+        # From fixture, param 269 = 1 (radiator)
+        assert select.current_option == "radiator"
+        assert select._device_id == "circuit_1"
+
+    def test_circuit_type_ufh(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit type select for UFH (type=2)."""
+        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+
+        # Circuit 2 has type=2 (UFH)
+        description = EconetSelectEntityDescription(
+            key="circuit_type",
+            param_id="319",  # Circuit2TypeSettings
+            device_type="circuit",
+            icon="mdi:heating-coil",
+            options=CIRCUIT_TYPE_OPTIONS,
+            value_map=CIRCUIT_TYPE_MAPPING,
+            reverse_map=CIRCUIT_TYPE_REVERSE,
+        )
+
+        select = EconetNextSelect(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 319 = 2 (UFH)
+        assert select.current_option == "ufh"
+
+    @pytest.mark.asyncio
+    async def test_set_circuit_type(self, coordinator: EconetNextCoordinator) -> None:
+        """Test setting circuit type."""
+        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+
+        description = EconetSelectEntityDescription(
+            key="circuit_type",
+            param_id="269",
+            device_type="circuit",
+            options=CIRCUIT_TYPE_OPTIONS,
+            value_map=CIRCUIT_TYPE_MAPPING,
+            reverse_map=CIRCUIT_TYPE_REVERSE,
+        )
+
+        select = EconetNextSelect(coordinator, description, device_id="circuit_1")
+        await select.async_select_option("fan_coil")
+
+        # Should set to 3 (fan coil)
+        coordinator.api.async_set_param.assert_called_once_with(269, 3)
+        assert coordinator.data["269"]["value"] == 3

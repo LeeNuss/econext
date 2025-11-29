@@ -58,8 +58,9 @@ class Circuit:
     curve_multiplier_param: str
     curve_radiator_param: str
     curve_floor_param: str
+    curve_fancoil_param: str
     curve_shift_param: str
-    user_correction_param: str
+    room_temp_correction_param: str
     type_settings_param: str
 
 
@@ -81,8 +82,9 @@ CIRCUITS = {
         curve_multiplier_param="263",
         curve_radiator_param="273",
         curve_floor_param="274",
+        curve_fancoil_param="586",
         curve_shift_param="275",
-        user_correction_param="280",
+        room_temp_correction_param="280",
         type_settings_param="269",
     ),
     2: Circuit(
@@ -102,8 +104,9 @@ CIRCUITS = {
         curve_multiplier_param="313",
         curve_radiator_param="323",
         curve_floor_param="324",
+        curve_fancoil_param="587",
         curve_shift_param="325",
-        user_correction_param="330",
+        room_temp_correction_param="330",
         type_settings_param="319",
     ),
     3: Circuit(
@@ -123,8 +126,9 @@ CIRCUITS = {
         curve_multiplier_param="363",
         curve_radiator_param="373",
         curve_floor_param="374",
+        curve_fancoil_param="588",
         curve_shift_param="375",
-        user_correction_param="380",
+        room_temp_correction_param="380",
         type_settings_param="369",
     ),
     4: Circuit(
@@ -144,8 +148,9 @@ CIRCUITS = {
         curve_multiplier_param="971",
         curve_radiator_param="981",
         curve_floor_param="982",
+        curve_fancoil_param="589",
         curve_shift_param="983",
-        user_correction_param="988",
+        room_temp_correction_param="988",
         type_settings_param="977",
     ),
     5: Circuit(
@@ -165,8 +170,9 @@ CIRCUITS = {
         curve_multiplier_param="1022",
         curve_radiator_param="1032",
         curve_floor_param="1033",
+        curve_fancoil_param="590",
         curve_shift_param="1034",
-        user_correction_param="1039",
+        room_temp_correction_param="1039",
         type_settings_param="1028",
     ),
     6: Circuit(
@@ -186,8 +192,9 @@ CIRCUITS = {
         curve_multiplier_param="770",
         curve_radiator_param="774",
         curve_floor_param="775",
+        curve_fancoil_param="591",
         curve_shift_param="776",
-        user_correction_param="782",
+        room_temp_correction_param="782",
         type_settings_param="772",
     ),
     7: Circuit(
@@ -207,8 +214,9 @@ CIRCUITS = {
         curve_multiplier_param="820",
         curve_radiator_param="824",
         curve_floor_param="825",
+        curve_fancoil_param="592",
         curve_shift_param="826",
-        user_correction_param="832",
+        room_temp_correction_param="832",
         type_settings_param="822",
     ),
 }

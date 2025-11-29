@@ -7,7 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .climate import CIRCUITS
 from .const import (
+    CIRCUIT_SELECTS,
     CONTROLLER_SELECTS,
     DHW_SELECTS,
     DOMAIN,
@@ -56,7 +58,45 @@ async def async_setup_entry(
                         description.param_id,
                     )
 
+    # Add circuit select entities if circuit is active
+    for circuit_num, circuit in CIRCUITS.items():
+        # Check if circuit is active
+        active = coordinator.get_param(circuit.active_param)
+        if active and active.get("value") > 0:
+            # Create select entities for this circuit
+            for description in CIRCUIT_SELECTS:
+                # Map the select key to the appropriate circuit parameter
+                param_id = _get_circuit_param_id(circuit, description.key)
+                if param_id and coordinator.get_param(param_id) is not None:
+                    # Create a copy of the description with the actual param_id
+                    circuit_desc = EconetSelectEntityDescription(
+                        key=description.key,
+                        param_id=param_id,
+                        device_type=description.device_type,
+                        entity_category=description.entity_category,
+                        icon=description.icon,
+                        options=description.options,
+                        value_map=description.value_map,
+                        reverse_map=description.reverse_map,
+                    )
+                    entities.append(EconetNextSelect(coordinator, circuit_desc, device_id=f"circuit_{circuit_num}"))
+                else:
+                    _LOGGER.debug(
+                        "Skipping Circuit %s select %s - parameter %s not found",
+                        circuit_num,
+                        description.key,
+                        param_id,
+                    )
+
     async_add_entities(entities)
+
+
+def _get_circuit_param_id(circuit, select_key: str) -> str | None:
+    """Get the parameter ID for a circuit select entity based on its key."""
+    mapping = {
+        "circuit_type": circuit.type_settings_param,
+    }
+    return mapping.get(select_key)
 
 
 class EconetNextSelect(EconetNextEntity, SelectEntity):
@@ -66,11 +106,11 @@ class EconetNextSelect(EconetNextEntity, SelectEntity):
         self,
         coordinator: EconetNextCoordinator,
         description: EconetSelectEntityDescription,
+        device_id: str | None = None,
     ) -> None:
         """Initialize the select entity."""
-        # Determine device_id based on device_type
-        device_id = None
-        if description.device_type != "controller":
+        # Use provided device_id or determine from device_type
+        if device_id is None and description.device_type != "controller":
             device_id = description.device_type
 
         super().__init__(coordinator, description.param_id, device_id)

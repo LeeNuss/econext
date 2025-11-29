@@ -1,236 +1,238 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "title": "Connect to ecoNET Device",
-        "description": "Enter the connection details for your ecoNET device.",
-        "data": {
-          "host": "Host",
-          "port": "Port",
-          "username": "Username",
-          "password": "Password"
+    "config": {
+        "step": {
+            "user": {
+                "title": "Connect to ecoNET Device",
+                "description": "Enter the connection details for your ecoNET device.",
+                "data": {
+                    "host": "Host",
+                    "port": "Port",
+                    "username": "Username",
+                    "password": "Password"
+                }
+            },
+            "reconfigure": {
+                "title": "Reconfigure ecoNET Device",
+                "description": "Update the connection details for your ecoNET device.",
+                "data": {
+                    "host": "Host",
+                    "port": "Port",
+                    "username": "Username",
+                    "password": "Password"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to device",
+            "invalid_auth": "Invalid username or password",
+            "unknown": "Unexpected error occurred"
+        },
+        "abort": {
+            "already_configured": "Device is already configured",
+            "reconfigure_successful": "Configuration updated successfully",
+            "reconfigure_instead": "Use the reconfigure option to change connection settings"
         }
-      },
-      "reconfigure": {
-        "title": "Reconfigure ecoNET Device",
-        "description": "Update the connection details for your ecoNET device.",
-        "data": {
-          "host": "Host",
-          "port": "Port",
-          "username": "Username",
-          "password": "Password"
+    },
+    "entity": {
+        "climate": {
+            "circuit": {
+                "name": "{device_name}"
+            }
+        },
+        "sensor": {
+            "software_version": {
+                "name": "Software version"
+            },
+            "hardware_version": {
+                "name": "Hardware version"
+            },
+            "uid": {
+                "name": "UID"
+            },
+            "device_name": {
+                "name": "Device name"
+            },
+            "compilation_date": {
+                "name": "Compilation date"
+            },
+            "reset_counter": {
+                "name": "Reset counter"
+            },
+            "outdoor_temperature": {
+                "name": "Outdoor temperature"
+            },
+            "flap_valve_state": {
+                "name": "Flap valve state",
+                "state": {
+                    "ch": "Central Heating",
+                    "dhw": "Domestic Hot Water"
+                }
+            },
+            "wifi_ssid": {
+                "name": "WiFi SSID"
+            },
+            "wifi_signal_strength": {
+                "name": "WiFi signal strength"
+            },
+            "wifi_ip_address": {
+                "name": "WiFi IP address"
+            },
+            "lan_ip_address": {
+                "name": "LAN IP address"
+            },
+            "outputs": {
+                "name": "Outputs"
+            },
+            "inputs": {
+                "name": "Inputs"
+            },
+            "work_state_1": {
+                "name": "Work state 1"
+            },
+            "work_state_3": {
+                "name": "Work state 3"
+            },
+            "work_state_4": {
+                "name": "Work state 4"
+            },
+            "alarm_bits_1": {
+                "name": "Alarm bits 1"
+            },
+            "alarm_bits_2": {
+                "name": "Alarm bits 2"
+            },
+            "alarm_bits_3": {
+                "name": "Alarm bits 3"
+            },
+            "alarm_bits_4": {
+                "name": "Alarm bits 4"
+            },
+            "alarm_bits_5": {
+                "name": "Alarm bits 5"
+            },
+            "temperature": {
+                "name": "Temperature"
+            },
+            "setpoint_calculated": {
+                "name": "Setpoint calculated"
+            },
+            "boost_time_remaining": {
+                "name": "Boost time remaining"
+            },
+            "thermostat_temp": {
+                "name": "Thermostat temperature"
+            },
+            "calc_temp": {
+                "name": "Calculated temperature"
+            },
+            "room_temp_setpoint": {
+                "name": "Room temperature setpoint"
+            }
+        },
+        "number": {
+            "summer_mode_on": {
+                "name": "Summer mode on"
+            },
+            "summer_mode_off": {
+                "name": "Summer mode off"
+            },
+            "target_temperature": {
+                "name": "Target temperature"
+            },
+            "hysteresis": {
+                "name": "Hysteresis"
+            },
+            "max_temperature": {
+                "name": "Max temperature"
+            },
+            "max_temp_hysteresis": {
+                "name": "Max temp hysteresis"
+            },
+            "load_time": {
+                "name": "Load time"
+            },
+            "legionella_temperature": {
+                "name": "Legionella temperature"
+            },
+            "legionella_hour": {
+                "name": "Legionella hour"
+            },
+            "comfort_temp": {
+                "name": "Comfort temperature"
+            },
+            "eco_temp": {
+                "name": "Eco temperature"
+            },
+            "max_temp_radiator": {
+                "name": "Max radiator temperature"
+            },
+            "max_temp_heat": {
+                "name": "Max heating temperature"
+            },
+            "base_temp": {
+                "name": "Base temperature"
+            },
+            "temp_reduction": {
+                "name": "Temperature reduction"
+            },
+            "heating_curve": {
+                "name": "Heating curve"
+            },
+            "curve_shift": {
+                "name": "Curve shift"
+            },
+            "room_temp_correction": {
+                "name": "Room temperature correction"
+            }
+        },
+        "select": {
+            "operating_mode": {
+                "name": "Operating mode",
+                "state": {
+                    "summer": "Summer",
+                    "winter": "Winter",
+                    "auto": "Auto"
+                }
+            },
+            "mode": {
+                "name": "Mode",
+                "state": {
+                    "off": "Off",
+                    "on": "On",
+                    "schedule": "Schedule"
+                }
+            },
+            "legionella_day": {
+                "name": "Legionella day",
+                "state": {
+                    "sunday": "Sunday",
+                    "monday": "Monday",
+                    "tuesday": "Tuesday",
+                    "wednesday": "Wednesday",
+                    "thursday": "Thursday",
+                    "friday": "Friday",
+                    "saturday": "Saturday"
+                }
+            },
+            "circuit_type": {
+                "name": "Circuit type",
+                "state": {
+                    "radiator": "Radiator",
+                    "ufh": "Underfloor Heating",
+                    "fan_coil": "Fan Coil"
+                }
+            }
+        },
+        "switch": {
+            "cooling_support": {
+                "name": "Cooling support"
+            },
+            "boost": {
+                "name": "Boost"
+            },
+            "legionella_start": {
+                "name": "Legionella start"
+            }
         }
-      }
-    },
-    "error": {
-      "cannot_connect": "Failed to connect to device",
-      "invalid_auth": "Invalid username or password",
-      "unknown": "Unexpected error occurred"
-    },
-    "abort": {
-      "already_configured": "Device is already configured",
-      "reconfigure_successful": "Configuration updated successfully",
-      "reconfigure_instead": "Use the reconfigure option to change connection settings"
     }
-  },
-  "entity": {
-    "climate": {
-      "circuit": {
-        "name": "{device_name}"
-      }
-    },
-    "sensor": {
-      "software_version": {
-        "name": "Software version"
-      },
-      "hardware_version": {
-        "name": "Hardware version"
-      },
-      "uid": {
-        "name": "UID"
-      },
-      "device_name": {
-        "name": "Device name"
-      },
-      "compilation_date": {
-        "name": "Compilation date"
-      },
-      "reset_counter": {
-        "name": "Reset counter"
-      },
-      "outdoor_temperature": {
-        "name": "Outdoor temperature"
-      },
-      "flap_valve_state": {
-        "name": "Flap valve state",
-        "state": {
-          "ch": "Central Heating",
-          "dhw": "Domestic Hot Water"
-        }
-      },
-      "wifi_ssid": {
-        "name": "WiFi SSID"
-      },
-      "wifi_signal_strength": {
-        "name": "WiFi signal strength"
-      },
-      "wifi_ip_address": {
-        "name": "WiFi IP address"
-      },
-      "lan_ip_address": {
-        "name": "LAN IP address"
-      },
-      "outputs": {
-        "name": "Outputs"
-      },
-      "inputs": {
-        "name": "Inputs"
-      },
-      "work_state_1": {
-        "name": "Work state 1"
-      },
-      "work_state_3": {
-        "name": "Work state 3"
-      },
-      "work_state_4": {
-        "name": "Work state 4"
-      },
-      "alarm_bits_1": {
-        "name": "Alarm bits 1"
-      },
-      "alarm_bits_2": {
-        "name": "Alarm bits 2"
-      },
-      "alarm_bits_3": {
-        "name": "Alarm bits 3"
-      },
-      "alarm_bits_4": {
-        "name": "Alarm bits 4"
-      },
-      "alarm_bits_5": {
-        "name": "Alarm bits 5"
-      },
-      "temperature": {
-        "name": "Temperature"
-      },
-      "setpoint_calculated": {
-        "name": "Setpoint calculated"
-      },
-      "boost_time_remaining": {
-        "name": "Boost time remaining"
-      },
-      "thermostat_temp": {
-        "name": "Thermostat temperature"
-      },
-      "calc_temp": {
-        "name": "Calculated temperature"
-      },
-      "room_temp_setpoint": {
-        "name": "Room temperature setpoint"
-      }
-    },
-    "number": {
-      "summer_mode_on": {
-        "name": "Summer mode on"
-      },
-      "summer_mode_off": {
-        "name": "Summer mode off"
-      },
-      "target_temperature": {
-        "name": "Target temperature"
-      },
-      "hysteresis": {
-        "name": "Hysteresis"
-      },
-      "max_temperature": {
-        "name": "Max temperature"
-      },
-      "max_temp_hysteresis": {
-        "name": "Max temp hysteresis"
-      },
-      "load_time": {
-        "name": "Load time"
-      },
-      "legionella_temperature": {
-        "name": "Legionella temperature"
-      },
-      "legionella_hour": {
-        "name": "Legionella hour"
-      },
-      "comfort_temp": {
-        "name": "Comfort temperature"
-      },
-      "eco_temp": {
-        "name": "Eco temperature"
-      },
-      "max_temp_radiator": {
-        "name": "Max radiator temperature"
-      },
-      "max_temp_heat": {
-        "name": "Max heating temperature"
-      },
-      "base_temp": {
-        "name": "Base temperature"
-      },
-      "temp_reduction": {
-        "name": "Temperature reduction"
-      },
-      "curve_multiplier": {
-        "name": "Curve Multiplier"
-      },
-      "curve_radiator": {
-        "name": "Radiator heating curve"
-      },
-      "curve_floor": {
-        "name": "Floor heating curve"
-      },
-      "curve_shift": {
-        "name": "Curve shift"
-      },
-      "room_temp_correction": {
-        "name": "Room temperature correction"
-      }
-    },
-    "select": {
-      "operating_mode": {
-        "name": "Operating mode",
-        "state": {
-          "summer": "Summer",
-          "winter": "Winter",
-          "auto": "Auto"
-        }
-      },
-      "mode": {
-        "name": "Mode",
-        "state": {
-          "off": "Off",
-          "on": "On",
-          "schedule": "Schedule"
-        }
-      },
-      "legionella_day": {
-        "name": "Legionella day",
-        "state": {
-          "sunday": "Sunday",
-          "monday": "Monday",
-          "tuesday": "Tuesday",
-          "wednesday": "Wednesday",
-          "thursday": "Thursday",
-          "friday": "Friday",
-          "saturday": "Saturday"
-        }
-      }
-    },
-    "switch": {
-      "cooling_support": {
-        "name": "Cooling support"
-      },
-      "boost": {
-        "name": "Boost"
-      },
-      "legionella_start": {
-        "name": "Legionella start"
-      }
-    }
-  }
 }
