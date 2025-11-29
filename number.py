@@ -7,7 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .climate import CIRCUITS
 from .const import (
+    CIRCUIT_NUMBERS,
     CONTROLLER_NUMBERS,
     DHW_NUMBERS,
     DOMAIN,
@@ -56,7 +58,59 @@ async def async_setup_entry(
                         description.param_id,
                     )
 
+    # Add circuit number entities if circuit is active
+    for circuit_num, circuit in CIRCUITS.items():
+        # Check if circuit is active
+        active = coordinator.get_param(circuit.active_param)
+        if active and active.get("value") > 0:
+            # Create number entities for this circuit
+            for description in CIRCUIT_NUMBERS:
+                # Map the number key to the appropriate circuit parameter
+                param_id = _get_circuit_param_id(circuit, description.key)
+                if param_id and coordinator.get_param(param_id) is not None:
+                    # Create a copy of the description with the actual param_id
+                    circuit_desc = EconetNumberEntityDescription(
+                        key=description.key,
+                        param_id=param_id,
+                        device_type=description.device_type,
+                        native_unit_of_measurement=description.native_unit_of_measurement,
+                        entity_category=description.entity_category,
+                        icon=description.icon,
+                        native_min_value=description.native_min_value,
+                        native_max_value=description.native_max_value,
+                        native_step=description.native_step,
+                        min_value_param_id=description.min_value_param_id,
+                        max_value_param_id=description.max_value_param_id,
+                    )
+                    entities.append(EconetNextNumber(coordinator, circuit_desc, device_id=f"circuit_{circuit_num}"))
+                else:
+                    _LOGGER.debug(
+                        "Skipping Circuit %s number %s - parameter %s not found",
+                        circuit_num,
+                        description.key,
+                        param_id,
+                    )
+
     async_add_entities(entities)
+
+
+def _get_circuit_param_id(circuit, number_key: str) -> str | None:
+    """Get the parameter ID for a circuit number entity based on its key."""
+    mapping = {
+        "comfort_temp": circuit.comfort_param,
+        "eco_temp": circuit.eco_param,
+        "hysteresis": circuit.hysteresis_param,
+        "max_temp_radiator": circuit.max_temp_radiator_param,
+        "max_temp_heat": circuit.max_temp_heat_param,
+        "base_temp": circuit.base_temp_param,
+        "temp_reduction": circuit.temp_reduction_param,
+        "curve_multiplier": circuit.curve_multiplier_param,
+        "curve_radiator": circuit.curve_radiator_param,
+        "curve_floor": circuit.curve_floor_param,
+        "curve_shift": circuit.curve_shift_param,
+        "user_correction": circuit.user_correction_param,
+    }
+    return mapping.get(number_key)
 
 
 class EconetNextNumber(EconetNextEntity, NumberEntity):
@@ -68,11 +122,11 @@ class EconetNextNumber(EconetNextEntity, NumberEntity):
         self,
         coordinator: EconetNextCoordinator,
         description: EconetNumberEntityDescription,
+        device_id: str | None = None,
     ) -> None:
         """Initialize the number entity."""
-        # Determine device_id based on device_type
-        device_id = None
-        if description.device_type != "controller":
+        # Use provided device_id or determine from device_type
+        if device_id is None and description.device_type != "controller":
             device_id = description.device_type
 
         super().__init__(coordinator, description.param_id, device_id)

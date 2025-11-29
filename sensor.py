@@ -7,7 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .climate import CIRCUITS
 from .const import (
+    CIRCUIT_SENSORS,
     CONTROLLER_SENSORS,
     DHW_SENSORS,
     DOMAIN,
@@ -57,7 +59,50 @@ async def async_setup_entry(
                         description.param_id,
                     )
 
+    # Add circuit sensors if circuit is active
+    for circuit_num, circuit in CIRCUITS.items():
+        # Check if circuit is active
+        active = coordinator.get_param(circuit.active_param)
+        if active and active.get("value") > 0:
+            # Create sensors for this circuit
+            for description in CIRCUIT_SENSORS:
+                # Map the sensor key to the appropriate circuit parameter
+                param_id = _get_circuit_param_id(circuit, description.key)
+                if param_id and coordinator.get_param(param_id) is not None:
+                    # Create a copy of the description with the actual param_id and device_id
+                    circuit_desc = EconetSensorEntityDescription(
+                        key=description.key,
+                        param_id=param_id,
+                        device_type=description.device_type,
+                        device_class=description.device_class,
+                        state_class=description.state_class,
+                        native_unit_of_measurement=description.native_unit_of_measurement,
+                        entity_category=description.entity_category,
+                        icon=description.icon,
+                        precision=description.precision,
+                        options=description.options,
+                        value_map=description.value_map,
+                    )
+                    entities.append(EconetNextSensor(coordinator, circuit_desc, device_id=f"circuit_{circuit_num}"))
+                else:
+                    _LOGGER.debug(
+                        "Skipping Circuit %s sensor %s - parameter %s not found",
+                        circuit_num,
+                        description.key,
+                        param_id,
+                    )
+
     async_add_entities(entities)
+
+
+def _get_circuit_param_id(circuit, sensor_key: str) -> str | None:
+    """Get the parameter ID for a circuit sensor based on its key."""
+    mapping = {
+        "thermostat_temp": circuit.thermostat_param,
+        "calc_temp": circuit.calc_temp_param,
+        "room_temp_setpoint": circuit.room_temp_setpoint_param,
+    }
+    return mapping.get(sensor_key)
 
 
 class EconetNextSensor(EconetNextEntity, SensorEntity):
@@ -67,11 +112,11 @@ class EconetNextSensor(EconetNextEntity, SensorEntity):
         self,
         coordinator: EconetNextCoordinator,
         description: EconetSensorEntityDescription,
+        device_id: str | None = None,
     ) -> None:
         """Initialize the sensor."""
-        # Determine device_id based on device_type
-        device_id = None
-        if description.device_type != "controller":
+        # Use provided device_id or determine from device_type
+        if device_id is None and description.device_type != "controller":
             device_id = description.device_type
 
         super().__init__(coordinator, description.param_id, device_id)

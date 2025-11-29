@@ -263,3 +263,116 @@ class TestSensorEntityCategory:
         sensor = EconetNextSensor(coordinator, description)
 
         assert not hasattr(sensor, "_attr_entity_category") or sensor._attr_entity_category is None
+
+
+class TestCircuitSensors:
+    """Test circuit sensor functionality."""
+
+    def test_circuit_sensor_definitions(self) -> None:
+        """Test circuit sensor definitions are correct."""
+        from econet_next.const import CIRCUIT_SENSORS
+
+        assert len(CIRCUIT_SENSORS) == 3
+        keys = {s.key for s in CIRCUIT_SENSORS}
+        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint"}
+
+        # All should be temperature sensors
+        for sensor in CIRCUIT_SENSORS:
+            assert sensor.device_class == SensorDeviceClass.TEMPERATURE
+            assert sensor.state_class == SensorStateClass.MEASUREMENT
+            assert sensor.native_unit_of_measurement == UnitOfTemperature.CELSIUS
+            assert sensor.precision == 1
+            assert sensor.device_type == DeviceType.CIRCUIT
+
+    def test_circuit_thermostat_temp_sensor(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit thermostat temperature sensor."""
+        description = EconetSensorEntityDescription(
+            key="thermostat_temp",
+            param_id="327",  # Circuit2thermostatTemp
+            device_type=DeviceType.CIRCUIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:thermometer",
+            precision=1,
+        )
+
+        sensor = EconetNextSensor(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 327 = 19.93, rounded to 19.9 with precision=1
+        assert sensor.native_value == 19.9
+        assert sensor._attr_device_class == SensorDeviceClass.TEMPERATURE
+        assert sensor._attr_native_unit_of_measurement == UnitOfTemperature.CELSIUS
+        assert sensor._device_id == "circuit_2"
+
+    def test_circuit_calc_temp_sensor(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit calculated temperature sensor."""
+        description = EconetSensorEntityDescription(
+            key="calc_temp",
+            param_id="287",  # Circuit2CalcTemp
+            device_type=DeviceType.CIRCUIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:thermometer-auto",
+            precision=1,
+        )
+
+        sensor = EconetNextSensor(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 287 = 35.92, rounded to 35.9 with precision=1
+        assert sensor.native_value == 35.9
+        assert sensor._attr_icon == "mdi:thermometer-auto"
+
+    def test_circuit_room_temp_setpoint_sensor(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit room temperature setpoint sensor."""
+        description = EconetSensorEntityDescription(
+            key="room_temp_setpoint",
+            param_id="92",  # Circuit2_romTempSet
+            device_type=DeviceType.CIRCUIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:target",
+            precision=1,
+        )
+
+        sensor = EconetNextSensor(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 92 = 21.0
+        assert sensor.native_value == 21.0
+        assert sensor._attr_icon == "mdi:target"
+
+    def test_circuit_sensor_invalid_temp(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit sensor handles invalid temperature (999.0)."""
+        coordinator.last_update_success = True
+        coordinator.data["327"] = {"value": 999.0, "name": "Circuit2thermostatTemp", "info": 23}
+
+        description = EconetSensorEntityDescription(
+            key="thermostat_temp",
+            param_id="327",
+            device_type=DeviceType.CIRCUIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+        )
+
+        sensor = EconetNextSensor(coordinator, description, device_id="circuit_2")
+
+        # 999.0 should be treated as unavailable
+        assert sensor.available is False
+
+    def test_circuit_sensor_with_device_id(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit sensor is associated with correct device."""
+        description = EconetSensorEntityDescription(
+            key="thermostat_temp",
+            param_id="327",
+            device_type=DeviceType.CIRCUIT,
+        )
+
+        # Create sensor for circuit 2
+        sensor = EconetNextSensor(coordinator, description, device_id="circuit_2")
+
+        assert sensor._device_id == "circuit_2"
+        assert sensor._param_id == "327"
+
+        # Unique ID should include circuit device_id
+        assert "circuit_2" in sensor.unique_id

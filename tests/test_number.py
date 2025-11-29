@@ -182,3 +182,202 @@ class TestEconetNextNumber:
         coordinator.api.async_set_param.assert_called_once_with(702, 25)
         # Optimistic update should set the local value
         assert coordinator.data["702"]["value"] == 25
+
+
+class TestCircuitNumbers:
+    """Test circuit number functionality."""
+
+    def test_circuit_number_definitions(self) -> None:
+        """Test circuit number definitions are correct."""
+        from econet_next.const import CIRCUIT_NUMBERS, DeviceType
+
+        assert len(CIRCUIT_NUMBERS) == 12
+        keys = {n.key for n in CIRCUIT_NUMBERS}
+        expected_keys = {
+            "comfort_temp",
+            "eco_temp",
+            "hysteresis",
+            "max_temp_radiator",
+            "max_temp_heat",
+            "base_temp",
+            "temp_reduction",
+            "curve_multiplier",
+            "curve_radiator",
+            "curve_floor",
+            "curve_shift",
+            "user_correction",
+        }
+        assert keys == expected_keys
+
+        # All should be circuit device type
+        for number in CIRCUIT_NUMBERS:
+            assert number.device_type == DeviceType.CIRCUIT
+
+    def test_circuit_comfort_temp_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit comfort temperature number."""
+        description = EconetNumberEntityDescription(
+            key="comfort_temp",
+            param_id="288",  # Circuit2ComfortTemp
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:sun-thermometer",
+            native_min_value=10.0,
+            native_max_value=35.0,
+            native_step=0.5,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 288 = 21.0
+        assert number.native_value == 21.0
+        assert number.native_min_value == 10.0
+        assert number.native_max_value == 35.0
+        assert number._attr_native_step == 0.5
+        assert number._attr_icon == "mdi:sun-thermometer"
+        assert number._device_id == "circuit_2"
+
+    def test_circuit_eco_temp_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit eco temperature number."""
+        description = EconetNumberEntityDescription(
+            key="eco_temp",
+            param_id="289",  # Circuit2EcoTemp
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:leaf",
+            native_min_value=10.0,
+            native_max_value=35.0,
+            native_step=0.5,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 289 = 17.5
+        assert number.native_value == 17.5
+        assert number._attr_icon == "mdi:leaf"
+
+    def test_circuit_hysteresis_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit hysteresis number."""
+        description = EconetNumberEntityDescription(
+            key="hysteresis",
+            param_id="290",  # Circuit2DownHist
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:thermometer-lines",
+            native_min_value=0.0,
+            native_max_value=5.0,
+            native_step=0.5,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 290 = 0.3
+        assert number.native_value == 0.3
+        assert number.native_min_value == 0.0
+        assert number.native_max_value == 5.0
+
+    def test_circuit_curve_multiplier_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit curve multiplier number."""
+        description = EconetNumberEntityDescription(
+            key="curve_multiplier",
+            param_id="313",  # Circuit2Multiplier
+            device_type="circuit",
+            icon="mdi:chart-bell-curve",
+            native_min_value=0.0,
+            native_max_value=10.0,
+            native_step=0.1,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 313 = 4.0
+        assert number.native_value == 4.0
+        assert number.native_min_value == 0.0
+        assert number.native_max_value == 10.0
+        assert number._attr_native_step == 0.1
+
+    def test_circuit_curve_radiator_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit radiator curve number."""
+        description = EconetNumberEntityDescription(
+            key="curve_radiator",
+            param_id="323",  # Circuit2CurveRadiator
+            device_type="circuit",
+            icon="mdi:chart-line",
+            native_min_value=0.0,
+            native_max_value=4.0,
+            native_step=0.1,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 323 = 1.2
+        assert number.native_value == 1.2
+        assert number._attr_icon == "mdi:chart-line"
+
+    def test_circuit_curve_shift_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit curve shift number."""
+        description = EconetNumberEntityDescription(
+            key="curve_shift",
+            param_id="325",  # Circuit2Curveshift
+            device_type="circuit",
+            icon="mdi:arrow-up-down",
+            native_min_value=-20,
+            native_max_value=20,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 325 = 5
+        assert number.native_value == 5.0
+
+    @pytest.mark.asyncio
+    async def test_circuit_set_comfort_temp(self, coordinator: EconetNextCoordinator) -> None:
+        """Test setting circuit comfort temperature."""
+        description = EconetNumberEntityDescription(
+            key="comfort_temp",
+            param_id="288",  # Circuit2ComfortTemp
+            device_type="circuit",
+            native_min_value=10.0,
+            native_max_value=35.0,
+            native_step=0.5,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+        await number.async_set_native_value(22.5)
+
+        coordinator.api.async_set_param.assert_called_once_with(288, 22.5)
+        assert coordinator.data["288"]["value"] == 22.5
+
+    @pytest.mark.asyncio
+    async def test_circuit_set_eco_temp(self, coordinator: EconetNextCoordinator) -> None:
+        """Test setting circuit eco temperature."""
+        description = EconetNumberEntityDescription(
+            key="eco_temp",
+            param_id="289",  # Circuit2EcoTemp
+            device_type="circuit",
+            native_min_value=10.0,
+            native_max_value=35.0,
+            native_step=0.5,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+        await number.async_set_native_value(18.0)
+
+        coordinator.api.async_set_param.assert_called_once_with(289, 18.0)
+        assert coordinator.data["289"]["value"] == 18.0
+
+    def test_circuit_number_with_device_id(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit number is associated with correct device."""
+        description = EconetNumberEntityDescription(
+            key="comfort_temp",
+            param_id="288",
+            device_type="circuit",
+        )
+
+        # Create number for circuit 2
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        assert number._device_id == "circuit_2"
+        assert number._param_id == "288"
+
+        # Unique ID should include circuit device_id
+        assert "circuit_2" in number.unique_id

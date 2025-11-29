@@ -118,6 +118,15 @@
       },
       "boost_time_remaining": {
         "name": "Boost time remaining"
+      },
+      "thermostat_temp": {
+        "name": "Thermostat temperature"
+      },
+      "calc_temp": {
+        "name": "Calculated temperature"
+      },
+      "room_temp_setpoint": {
+        "name": "Room temperature setpoint"
       }
     },
     "number": {
@@ -147,6 +156,39 @@
       },
       "legionella_hour": {
         "name": "Legionella hour"
+      },
+      "comfort_temp": {
+        "name": "Comfort temperature"
+      },
+      "eco_temp": {
+        "name": "Eco temperature"
+      },
+      "max_temp_radiator": {
+        "name": "Max radiator temperature"
+      },
+      "max_temp_heat": {
+        "name": "Max heating temperature"
+      },
+      "base_temp": {
+        "name": "Base temperature"
+      },
+      "temp_reduction": {
+        "name": "Temperature reduction"
+      },
+      "curve_multiplier": {
+        "name": "Curve Multiplier"
+      },
+      "curve_radiator": {
+        "name": "Radiator heating curve"
+      },
+      "curve_floor": {
+        "name": "Floor heating curve"
+      },
+      "curve_shift": {
+        "name": "Curve shift"
+      },
+      "room_temp_correction": {
+        "name": "Room temperature correction"
       }
     },
     "select": {

@@ -501,3 +501,176 @@ DHW_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
         reverse_map=LEGIONELLA_DAY_REVERSE,
     ),
 )
+
+
+# ============================================================================
+# Circuit (Heating Zones) Devices - Circuits 1-7
+# ============================================================================
+
+# Circuit sensors - read only temperature sensors
+# Note: These use a function-based approach since each circuit has the same pattern
+# Circuit-specific param IDs are defined in climate.py CIRCUITS dict
+
+# Circuit temperature sensors (per circuit)
+CIRCUIT_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
+    # Room thermostat temperature
+    EconetSensorEntityDescription(
+        key="thermostat_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer",
+        precision=1,
+    ),
+    # Calculated target temperature
+    EconetSensorEntityDescription(
+        key="calc_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-auto",
+        precision=1,
+    ),
+    # Room temperature setpoint
+    EconetSensorEntityDescription(
+        key="room_temp_setpoint",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:target",
+        precision=1,
+    ),
+)
+
+
+# Circuit number entities - editable settings
+CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
+    # Comfort temperature
+    EconetNumberEntityDescription(
+        key="comfort_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:sun-thermometer",
+        native_min_value=10.0,
+        native_max_value=35.0,
+        native_step=0.5,
+    ),
+    # Eco temperature
+    EconetNumberEntityDescription(
+        key="eco_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:leaf",
+        native_min_value=10.0,
+        native_max_value=35.0,
+        native_step=0.5,
+    ),
+    # Temperature hysteresis
+    EconetNumberEntityDescription(
+        key="hysteresis",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-lines",
+        native_min_value=0.0,
+        native_max_value=5.0,
+        native_step=0.5,
+    ),
+    # Max radiator temperature
+    EconetNumberEntityDescription(
+        key="max_temp_radiator",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-high",
+        native_min_value=0,
+        native_max_value=75,
+    ),
+    # Max heating temperature
+    EconetNumberEntityDescription(
+        key="max_temp_heat",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-high",
+        native_min_value=30,
+        native_max_value=55,
+    ),
+    # Base temperature
+    EconetNumberEntityDescription(
+        key="base_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer",
+        native_min_value=24,
+        native_max_value=75,
+    ),
+    # Temperature reduction
+    EconetNumberEntityDescription(
+        key="temp_reduction",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-minus",
+        native_min_value=0,
+        native_max_value=20,
+    ),
+    # Curve multiplier
+    EconetNumberEntityDescription(
+        key="curve_multiplier",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:chart-bell-curve",
+        native_min_value=0.0,
+        native_max_value=10.0,
+        native_step=0.1,
+    ),
+    # Radiator heating curve
+    EconetNumberEntityDescription(
+        key="curve_radiator",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:chart-line",
+        native_min_value=0.0,
+        native_max_value=4.0,
+        native_step=0.1,
+    ),
+    # Floor heating curve
+    EconetNumberEntityDescription(
+        key="curve_floor",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:chart-line",
+        native_min_value=0.0,
+        native_max_value=4.0,
+        native_step=0.1,
+    ),
+    # Curve shift
+    EconetNumberEntityDescription(
+        key="curve_shift",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:arrow-up-down",
+        native_min_value=-20,
+        native_max_value=20,
+    ),
+    # Room temperature correction
+    EconetNumberEntityDescription(
+        key="room_temp_correction",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:tune",
+        native_min_value=-10,
+        native_max_value=10,
+    ),
+)

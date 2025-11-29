@@ -3,7 +3,6 @@
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from re import S
 
 from homeassistant.components.climate import (
     ClimateEntity,
@@ -32,10 +31,13 @@ class CircuitWorkState(IntEnum):
     ECO = 2
     AUTO = 3
 
+
 # Circuit configuration
-# Circuit number: (active_param, name_param, work_state_param, thermostat_temp_param, comfort_temp_param, eco_temp_param)
 @dataclass
 class Circuit:
+    """Configuration for a heating circuit."""
+
+    # Core parameters (used by climate entity)
     active_param: str
     name_param: str
     work_state_param: str
@@ -43,14 +45,172 @@ class Circuit:
     comfort_param: str
     eco_param: str
 
+    # Temperature sensors
+    calc_temp_param: str
+    room_temp_setpoint_param: str
+
+    # Settings
+    hysteresis_param: str
+    max_temp_radiator_param: str
+    max_temp_heat_param: str
+    base_temp_param: str
+    temp_reduction_param: str
+    curve_multiplier_param: str
+    curve_radiator_param: str
+    curve_floor_param: str
+    curve_shift_param: str
+    user_correction_param: str
+    type_settings_param: str
+
+
 CIRCUITS = {
-    1: Circuit("279", "278", "236", "277", "238", "239"),
-    2: Circuit("329", "328", "286", "327", "288", "289"),
-    3: Circuit("901", "900", "336", "899", "338", "339"),
-    4: Circuit("987", "986", "944", "985", "946", "947"),
-    5: Circuit("1038", "1037", "995", "1036", "997", "998"),
-    6: Circuit("781", "780", "753", "779", "755", "756"),
-    7: Circuit("831", "830", "803", "829", "805", "806"),
+    1: Circuit(
+        active_param="279",
+        name_param="278",
+        work_state_param="236",
+        thermostat_param="277",
+        comfort_param="238",
+        eco_param="239",
+        calc_temp_param="237",
+        room_temp_setpoint_param="42",
+        hysteresis_param="240",
+        max_temp_radiator_param="242",
+        max_temp_heat_param="243",
+        base_temp_param="261",
+        temp_reduction_param="262",
+        curve_multiplier_param="263",
+        curve_radiator_param="273",
+        curve_floor_param="274",
+        curve_shift_param="275",
+        user_correction_param="280",
+        type_settings_param="269",
+    ),
+    2: Circuit(
+        active_param="329",
+        name_param="328",
+        work_state_param="286",
+        thermostat_param="327",
+        comfort_param="288",
+        eco_param="289",
+        calc_temp_param="287",
+        room_temp_setpoint_param="92",
+        hysteresis_param="290",
+        max_temp_radiator_param="292",
+        max_temp_heat_param="293",
+        base_temp_param="311",
+        temp_reduction_param="312",
+        curve_multiplier_param="313",
+        curve_radiator_param="323",
+        curve_floor_param="324",
+        curve_shift_param="325",
+        user_correction_param="330",
+        type_settings_param="319",
+    ),
+    3: Circuit(
+        active_param="901",
+        name_param="900",
+        work_state_param="336",
+        thermostat_param="899",
+        comfort_param="338",
+        eco_param="339",
+        calc_temp_param="337",
+        room_temp_setpoint_param="93",
+        hysteresis_param="340",
+        max_temp_radiator_param="342",
+        max_temp_heat_param="343",
+        base_temp_param="361",
+        temp_reduction_param="362",
+        curve_multiplier_param="363",
+        curve_radiator_param="373",
+        curve_floor_param="374",
+        curve_shift_param="375",
+        user_correction_param="380",
+        type_settings_param="369",
+    ),
+    4: Circuit(
+        active_param="987",
+        name_param="986",
+        work_state_param="944",
+        thermostat_param="985",
+        comfort_param="946",
+        eco_param="947",
+        calc_temp_param="945",
+        room_temp_setpoint_param="94",
+        hysteresis_param="948",
+        max_temp_radiator_param="950",
+        max_temp_heat_param="951",
+        base_temp_param="969",
+        temp_reduction_param="970",
+        curve_multiplier_param="971",
+        curve_radiator_param="981",
+        curve_floor_param="982",
+        curve_shift_param="983",
+        user_correction_param="988",
+        type_settings_param="977",
+    ),
+    5: Circuit(
+        active_param="1038",
+        name_param="1037",
+        work_state_param="995",
+        thermostat_param="1036",
+        comfort_param="997",
+        eco_param="998",
+        calc_temp_param="996",
+        room_temp_setpoint_param="95",
+        hysteresis_param="999",
+        max_temp_radiator_param="1001",
+        max_temp_heat_param="1002",
+        base_temp_param="1020",
+        temp_reduction_param="1021",
+        curve_multiplier_param="1022",
+        curve_radiator_param="1032",
+        curve_floor_param="1033",
+        curve_shift_param="1034",
+        user_correction_param="1039",
+        type_settings_param="1028",
+    ),
+    6: Circuit(
+        active_param="781",
+        name_param="780",
+        work_state_param="753",
+        thermostat_param="779",
+        comfort_param="755",
+        eco_param="756",
+        calc_temp_param="754",
+        room_temp_setpoint_param="96",
+        hysteresis_param="757",
+        max_temp_radiator_param="759",
+        max_temp_heat_param="760",
+        base_temp_param="768",
+        temp_reduction_param="769",
+        curve_multiplier_param="770",
+        curve_radiator_param="774",
+        curve_floor_param="775",
+        curve_shift_param="776",
+        user_correction_param="782",
+        type_settings_param="772",
+    ),
+    7: Circuit(
+        active_param="831",
+        name_param="830",
+        work_state_param="803",
+        thermostat_param="829",
+        comfort_param="805",
+        eco_param="806",
+        calc_temp_param="804",
+        room_temp_setpoint_param="97",
+        hysteresis_param="807",
+        max_temp_radiator_param="809",
+        max_temp_heat_param="810",
+        base_temp_param="818",
+        temp_reduction_param="819",
+        curve_multiplier_param="820",
+        curve_radiator_param="824",
+        curve_floor_param="825",
+        curve_shift_param="826",
+        user_correction_param="832",
+        type_settings_param="822",
+    ),
 }
 
 
@@ -68,7 +228,7 @@ async def async_setup_entry(
     for circuit_num, circuit in CIRCUITS.items():
         # Check if circuit is active
         active = coordinator.get_param(circuit.active_param)
-        if active and active.get("value") > 0:
+        if active and active.get("value", 0) > 0:
             entities.append(
                 CircuitClimate(
                     coordinator,
