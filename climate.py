@@ -1,6 +1,9 @@
 """Climate platform for ecoNET Next integration."""
 
 import logging
+from dataclasses import dataclass
+from enum import IntEnum
+from re import S
 
 from homeassistant.components.climate import (
     ClimateEntity,
@@ -20,16 +23,34 @@ from .entity import EconetNextEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+
+class CircuitWorkState(IntEnum):
+    """Circuit work state values."""
+
+    OFF = 0
+    COMFORT = 1
+    ECO = 2
+    AUTO = 3
+
 # Circuit configuration
 # Circuit number: (active_param, name_param, work_state_param, thermostat_temp_param, comfort_temp_param, eco_temp_param)
+@dataclass
+class Circuit:
+    active_param: str
+    name_param: str
+    work_state_param: str
+    thermostat_param: str
+    comfort_param: str
+    eco_param: str
+
 CIRCUITS = {
-    1: ("279", "278", "236", "277", "238", "239"),
-    2: ("329", "328", "286", "327", "288", "289"),
-    3: ("901", "900", "336", "899", "338", "339"),
-    4: ("987", "986", "944", "985", "946", "947"),
-    5: ("1038", "1037", "995", "1036", "997", "998"),
-    6: ("781", "780", "753", "779", "755", "756"),
-    7: ("831", "830", "803", "829", "805", "806"),
+    1: Circuit("279", "278", "236", "277", "238", "239"),
+    2: Circuit("329", "328", "286", "327", "288", "289"),
+    3: Circuit("901", "900", "336", "899", "338", "339"),
+    4: Circuit("987", "986", "944", "985", "946", "947"),
+    5: Circuit("1038", "1037", "995", "1036", "997", "998"),
+    6: Circuit("781", "780", "753", "779", "755", "756"),
+    7: Circuit("831", "830", "803", "829", "805", "806"),
 }
 
 
@@ -44,28 +65,19 @@ async def async_setup_entry(
     entities: list[CircuitClimate] = []
 
     # Check each circuit
-    for circuit_num, params in CIRCUITS.items():
-        (
-            active_param,
-            name_param,
-            work_state_param,
-            thermostat_param,
-            comfort_param,
-            eco_param,
-        ) = params
-
+    for circuit_num, circuit in CIRCUITS.items():
         # Check if circuit is active
-        active = coordinator.get_param(active_param)
-        if active and active.get("value") == 1:
+        active = coordinator.get_param(circuit.active_param)
+        if active and active.get("value") > 0:
             entities.append(
                 CircuitClimate(
                     coordinator,
                     circuit_num,
-                    name_param,
-                    work_state_param,
-                    thermostat_param,
-                    comfort_param,
-                    eco_param,
+                    circuit.name_param,
+                    circuit.work_state_param,
+                    circuit.thermostat_param,
+                    circuit.comfort_param,
+                    circuit.eco_param,
                 )
             )
             _LOGGER.debug("Adding climate entity for Circuit %s", circuit_num)
@@ -73,7 +85,7 @@ async def async_setup_entry(
             _LOGGER.debug(
                 "Skipping Circuit %s - not active (param %s)",
                 circuit_num,
-                active_param,
+                circuit.active_param,
             )
 
     async_add_entities(entities)
@@ -121,6 +133,9 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
         self._attr_name = circuit_name
         self._attr_translation_key = "circuit"
 
+        # Track last preset mode to restore when switching back to HEAT
+        self._last_preset: str | None = None
+
     @property
     def current_temperature(self) -> float | None:
         """Return the current temperature from thermostat."""
@@ -152,9 +167,9 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     def hvac_mode(self) -> HVACMode:
         """Return current HVAC mode."""
         work_state = self._get_work_state()
-        if work_state == 0:
+        if work_state == CircuitWorkState.OFF:
             return HVACMode.OFF
-        elif work_state == 3:
+        elif work_state == CircuitWorkState.AUTO:
             return HVACMode.AUTO
         else:
             return HVACMode.HEAT
@@ -163,7 +178,7 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     def hvac_action(self) -> HVACAction | None:
         """Return current HVAC action."""
         work_state = self._get_work_state()
-        if work_state == 0:
+        if work_state == CircuitWorkState.OFF:
             return HVACAction.OFF
 
         # Check if currently heating (compare current vs target)
@@ -181,11 +196,13 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     def preset_mode(self) -> str | None:
         """Return current preset mode."""
         work_state = self._get_work_state()
-        if work_state == 1:
+        if work_state == CircuitWorkState.ECO:
+            self._last_preset = PRESET_ECO
             return PRESET_ECO
-        elif work_state == 2:
+        elif work_state == CircuitWorkState.COMFORT:
+            self._last_preset = PRESET_COMFORT
             return PRESET_COMFORT
-        elif work_state == 3:
+        elif work_state == CircuitWorkState.AUTO:
             # Auto mode - return None or determine from schedule
             return None
         return None
@@ -202,12 +219,16 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode."""
         if hvac_mode == HVACMode.OFF:
-            work_state = 0
+            work_state = CircuitWorkState.OFF
         elif hvac_mode == HVACMode.AUTO:
-            work_state = 3
+            work_state = CircuitWorkState.AUTO
         elif hvac_mode == HVACMode.HEAT:
-            # When switching to HEAT, default to comfort mode
-            work_state = 2
+            # When switching to HEAT, use last preset or default to COMFORT
+            if self._last_preset == PRESET_ECO:
+                work_state = CircuitWorkState.ECO
+            else:
+                # Default to COMFORT (also handles None case)
+                work_state = CircuitWorkState.COMFORT
         else:
             _LOGGER.error("Unsupported HVAC mode: %s", hvac_mode)
             return
@@ -223,12 +244,15 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set preset mode."""
         if preset_mode == PRESET_ECO:
-            work_state = 1
+            work_state = CircuitWorkState.ECO
         elif preset_mode == PRESET_COMFORT:
-            work_state = 2
+            work_state = CircuitWorkState.COMFORT
         else:
             _LOGGER.error("Unsupported preset mode: %s", preset_mode)
             return
+
+        # Update last preset
+        self._last_preset = preset_mode
 
         _LOGGER.debug(
             "Setting Circuit %s preset to %s (work_state=%s)",

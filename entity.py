@@ -46,12 +46,17 @@ class EconetNextEntity(CoordinatorEntity[EconetNextCoordinator]):
 
         if self._device_id:
             # Sub-device (DHW, Buffer, Circuit, Heat Pump)
-            return DeviceInfo(
+            device_info = DeviceInfo(
                 identifiers={(DOMAIN, f"{uid}_{self._device_id}")},
                 name=self._get_sub_device_name(),
                 manufacturer=MANUFACTURER,
                 via_device=(DOMAIN, uid),
             )
+            # Add model for circuits
+            if self._device_id.startswith("circuit_"):
+                circuit_num = self._device_id.split("_")[1]
+                device_info["model"] = f"Circuit {circuit_num}"
+            return device_info
 
         # Main controller device
         return DeviceInfo(
@@ -74,10 +79,24 @@ class EconetNextEntity(CoordinatorEntity[EconetNextCoordinator]):
             return "Buffer"
         if self._device_id == "heatpump":
             return "Heat Pump"
-        if self._device_id.startswith("circuit-"):
-            circuit_num = self._device_id.split("-")[1]
-            # Try to get custom name from params
+        if self._device_id.startswith("circuit_"):
+            circuit_num = self._device_id.split("_")[1]
             # Circuit name param IDs: 278, 328, 900, 986, 1037, 780, 830
+            name_params = {
+                "1": "278",
+                "2": "328",
+                "3": "900",
+                "4": "986",
+                "5": "1037",
+                "6": "780",
+                "7": "830",
+            }
+            if circuit_num in name_params:
+                name_param = self.coordinator.get_param(name_params[circuit_num])
+                if name_param:
+                    custom_name = name_param.get("value", "").strip()
+                    if custom_name:
+                        return custom_name
             return f"Circuit {circuit_num}"
 
         return self._device_id
