@@ -126,6 +126,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -148,8 +149,13 @@ class TestCircuitClimate:
         assert circuit_2_entity._attr_supported_features == expected
 
     def test_hvac_modes(self, circuit_2_entity: CircuitClimate) -> None:
-        """Test entity has correct HVAC modes."""
-        assert circuit_2_entity._attr_hvac_modes == [HVACMode.OFF, HVACMode.HEAT, HVACMode.AUTO]
+        """Test entity has correct HVAC modes based on settings."""
+        # From fixture, Circuit2Settings (param 281) should have heating enabled
+        # Test expects OFF, AUTO, and HEAT modes (cooling not enabled in fixture)
+        modes = circuit_2_entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.HEAT in modes
 
     def test_preset_modes(self, circuit_2_entity: CircuitClimate) -> None:
         """Test entity has correct preset modes."""
@@ -177,6 +183,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -195,6 +202,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -213,6 +221,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -231,6 +240,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -253,6 +263,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -270,6 +281,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -292,6 +304,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -310,6 +323,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -334,6 +348,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -353,6 +368,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -373,6 +389,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -420,6 +437,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -449,6 +467,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -495,6 +514,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -515,6 +535,7 @@ class TestCircuitClimate:
             circuit_num=2,
             name_param=circuit.name_param,
             work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
             thermostat_param=circuit.thermostat_param,
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
@@ -552,3 +573,218 @@ class TestCircuitClimate:
         assert device_info["model"] == "Circuit 2"
         # Should have parent (controller)
         assert device_info["via_device"] == ("econet_next", "2L7SDPN6KQ38CIH2401K01U")
+
+
+class TestOperatingModeHVACModes:
+    """Test HVAC modes based on operating mode and circuit settings."""
+
+    def test_hvac_modes_winter_mode_heating_enabled(self, coordinator: EconetNextCoordinator) -> None:
+        """Test HVAC modes in winter mode with heating enabled."""
+        # Set operating mode to winter (2)
+        coordinator.data["162"]["value"] = 2
+        # Circuit2Settings: heating enabled (bit 20 = 0), cooling disabled (bit 17 = 0)
+        coordinator.data["281"]["value"] = 0
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.HEAT in modes
+        assert HVACMode.COOL not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_summer_mode_cooling_enabled(self, coordinator: EconetNextCoordinator) -> None:
+        """Test HVAC modes in summer mode with cooling enabled."""
+        # Set operating mode to summer (1)
+        coordinator.data["162"]["value"] = 1
+        # Circuit2Settings: heating disabled (bit 20 = 1), cooling enabled (bit 17 = 1)
+        coordinator.data["281"]["value"] = (1 << 20) | (1 << 17)
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.COOL in modes
+        assert HVACMode.HEAT not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_auto_mode_both_enabled(self, coordinator: EconetNextCoordinator) -> None:
+        """Test HVAC modes in auto mode with both heating and cooling enabled."""
+        # Set operating mode to auto (3)
+        coordinator.data["162"]["value"] = 3
+        # Circuit2Settings: heating enabled (bit 20 = 0), cooling enabled (bit 17 = 1)
+        coordinator.data["281"]["value"] = 1 << 17
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.HEAT_COOL in modes
+        assert HVACMode.HEAT in modes
+        assert HVACMode.COOL in modes
+
+    def test_hvac_modes_auto_mode_only_heating(self, coordinator: EconetNextCoordinator) -> None:
+        """Test HVAC modes in auto mode with only heating enabled."""
+        # Set operating mode to auto (3)
+        coordinator.data["162"]["value"] = 3
+        # Circuit2Settings: heating enabled (bit 20 = 0), cooling disabled (bit 17 = 0)
+        coordinator.data["281"]["value"] = 0
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.HEAT in modes
+        assert HVACMode.COOL not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_auto_mode_only_cooling(self, coordinator: EconetNextCoordinator) -> None:
+        """Test HVAC modes in auto mode with only cooling enabled."""
+        # Set operating mode to auto (3)
+        coordinator.data["162"]["value"] = 3
+        # Circuit2Settings: heating disabled (bit 20 = 1), cooling enabled (bit 17 = 1)
+        coordinator.data["281"]["value"] = (1 << 20) | (1 << 17)
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.COOL in modes
+        assert HVACMode.HEAT not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_winter_cooling_enabled_ignored(self, coordinator: EconetNextCoordinator) -> None:
+        """Test that cooling is not available in winter mode even if enabled in settings."""
+        # Set operating mode to winter (2)
+        coordinator.data["162"]["value"] = 2
+        # Circuit2Settings: both heating and cooling enabled
+        coordinator.data["281"]["value"] = 1 << 17
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.HEAT in modes
+        # Cooling should not be available in winter mode
+        assert HVACMode.COOL not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_summer_heating_enabled_ignored(self, coordinator: EconetNextCoordinator) -> None:
+        """Test that heating is not available in summer mode even if enabled in settings."""
+        # Set operating mode to summer (1)
+        coordinator.data["162"]["value"] = 1
+        # Circuit2Settings: both heating and cooling enabled
+        coordinator.data["281"]["value"] = 1 << 17
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        assert HVACMode.COOL in modes
+        # Heating should not be available in summer mode
+        assert HVACMode.HEAT not in modes
+        assert HVACMode.HEAT_COOL not in modes
+
+    def test_hvac_modes_no_operating_mode_defaults_auto(self, coordinator: EconetNextCoordinator) -> None:
+        """Test that when operating mode is not available, system defaults to auto behavior."""
+        # Remove operating mode parameter
+        del coordinator.data["162"]
+        # Circuit2Settings: both heating and cooling enabled
+        coordinator.data["281"]["value"] = 1 << 17
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+        )
+
+        modes = entity.hvac_modes
+        assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
+        # Should behave like auto mode
+        assert HVACMode.HEAT_COOL in modes
+        assert HVACMode.HEAT in modes
+        assert HVACMode.COOL in modes

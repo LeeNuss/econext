@@ -41,6 +41,7 @@ class Circuit:
     active_param: str
     name_param: str
     work_state_param: str
+    settings_param: str  # Bitmap for heating/cooling/pump-only settings
     thermostat_param: str
     comfort_param: str
     eco_param: str
@@ -63,12 +64,18 @@ class Circuit:
     room_temp_correction_param: str
     type_settings_param: str
 
+    # Cooling parameters
+    min_setpoint_cooling_param: str
+    max_setpoint_cooling_param: str
+    cooling_base_temp_param: str
+
 
 CIRCUITS = {
     1: Circuit(
         active_param="279",
         name_param="278",
         work_state_param="236",
+        settings_param="231",
         thermostat_param="277",
         comfort_param="238",
         eco_param="239",
@@ -86,11 +93,15 @@ CIRCUITS = {
         curve_shift_param="275",
         room_temp_correction_param="280",
         type_settings_param="269",
+        min_setpoint_cooling_param="903",
+        max_setpoint_cooling_param="904",
+        cooling_base_temp_param="739",
     ),
     2: Circuit(
         active_param="329",
         name_param="328",
         work_state_param="286",
+        settings_param="281",
         thermostat_param="327",
         comfort_param="288",
         eco_param="289",
@@ -108,11 +119,15 @@ CIRCUITS = {
         curve_shift_param="325",
         room_temp_correction_param="330",
         type_settings_param="319",
+        min_setpoint_cooling_param="787",
+        max_setpoint_cooling_param="788",
+        cooling_base_temp_param="789",
     ),
     3: Circuit(
         active_param="901",
         name_param="900",
         work_state_param="336",
+        settings_param="331",
         thermostat_param="899",
         comfort_param="338",
         eco_param="339",
@@ -130,11 +145,15 @@ CIRCUITS = {
         curve_shift_param="375",
         room_temp_correction_param="380",
         type_settings_param="369",
+        min_setpoint_cooling_param="837",
+        max_setpoint_cooling_param="838",
+        cooling_base_temp_param="839",
     ),
     4: Circuit(
         active_param="987",
         name_param="986",
         work_state_param="944",
+        settings_param="940",
         thermostat_param="985",
         comfort_param="946",
         eco_param="947",
@@ -152,11 +171,15 @@ CIRCUITS = {
         curve_shift_param="983",
         room_temp_correction_param="988",
         type_settings_param="977",
+        min_setpoint_cooling_param="905",
+        max_setpoint_cooling_param="906",
+        cooling_base_temp_param="990",
     ),
     5: Circuit(
         active_param="1038",
         name_param="1037",
         work_state_param="995",
+        settings_param="991",
         thermostat_param="1036",
         comfort_param="997",
         eco_param="998",
@@ -174,11 +197,15 @@ CIRCUITS = {
         curve_shift_param="1034",
         room_temp_correction_param="1039",
         type_settings_param="1028",
+        min_setpoint_cooling_param="907",
+        max_setpoint_cooling_param="908",
+        cooling_base_temp_param="1041",
     ),
     6: Circuit(
         active_param="781",
         name_param="780",
         work_state_param="753",
+        settings_param="749",
         thermostat_param="779",
         comfort_param="755",
         eco_param="756",
@@ -196,11 +223,15 @@ CIRCUITS = {
         curve_shift_param="776",
         room_temp_correction_param="782",
         type_settings_param="772",
+        min_setpoint_cooling_param="909",
+        max_setpoint_cooling_param="910",
+        cooling_base_temp_param="784",
     ),
     7: Circuit(
         active_param="831",
         name_param="830",
         work_state_param="803",
+        settings_param="799",
         thermostat_param="829",
         comfort_param="805",
         eco_param="806",
@@ -218,6 +249,9 @@ CIRCUITS = {
         curve_shift_param="826",
         room_temp_correction_param="832",
         type_settings_param="822",
+        min_setpoint_cooling_param="911",
+        max_setpoint_cooling_param="912",
+        cooling_base_temp_param="834",
     ),
 }
 
@@ -243,6 +277,7 @@ async def async_setup_entry(
                     circuit_num,
                     circuit.name_param,
                     circuit.work_state_param,
+                    circuit.settings_param,
                     circuit.thermostat_param,
                     circuit.comfort_param,
                     circuit.eco_param,
@@ -264,7 +299,6 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
-    _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT, HVACMode.AUTO]
     _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT]
     _attr_min_temp = 10.0
     _attr_max_temp = 35.0
@@ -276,6 +310,7 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
         circuit_num: int,
         name_param: str,
         work_state_param: str,
+        settings_param: str,
         thermostat_param: str,
         comfort_param: str,
         eco_param: str,
@@ -287,6 +322,7 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
         self._circuit_num = circuit_num
         self._name_param = name_param
         self._work_state_param = work_state_param
+        self._settings_param = settings_param
         self._thermostat_param = thermostat_param
         self._comfort_param = comfort_param
         self._eco_param = eco_param
@@ -303,6 +339,47 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
 
         # Track last preset mode to restore when switching back to HEAT
         self._last_preset: str | None = None
+
+    @property
+    def hvac_modes(self) -> list[HVACMode]:
+        """Return available HVAC modes based on heating/cooling enable settings and system operating mode."""
+        modes = [HVACMode.OFF, HVACMode.AUTO]
+
+        # Read settings bitmap
+        settings_param = self.coordinator.get_param(self._settings_param)
+        if not settings_param:
+            # Default to HEAT mode if settings not available
+            modes.append(HVACMode.HEAT)
+            return modes
+
+        settings_value = int(settings_param.get("value", 0))
+
+        # Check bit 20: heating enable (inverted: 0=on, 1=off)
+        heating_enabled = ((settings_value >> 20) & 1) == 0
+
+        # Check bit 17: cooling enable (0=off, 1=on)
+        cooling_enabled = ((settings_value >> 17) & 1) == 1
+
+        # Get system operating mode (param 162: 1=summer, 2=winter, 3=auto)
+        operating_mode_param = self.coordinator.get_param("162")
+        operating_mode = int(operating_mode_param.get("value", 3)) if operating_mode_param else 3
+
+        # Determine available modes based on operating mode and enabled features
+        if operating_mode == 1:  # Summer mode - only cooling
+            if cooling_enabled:
+                modes.append(HVACMode.COOL)
+        elif operating_mode == 2:  # Winter mode - only heating
+            if heating_enabled:
+                modes.append(HVACMode.HEAT)
+        else:  # Auto mode (3) or unknown - both heating and cooling available
+            if heating_enabled and cooling_enabled:
+                modes.append(HVACMode.HEAT_COOL)
+            if heating_enabled:
+                modes.append(HVACMode.HEAT)
+            if cooling_enabled:
+                modes.append(HVACMode.COOL)
+
+        return modes
 
     @property
     def current_temperature(self) -> float | None:

@@ -183,6 +183,15 @@
             },
             "room_temp_correction": {
                 "name": "Room temperature correction"
+            },
+            "min_setpoint_cooling": {
+                "name": "Min cooling setpoint"
+            },
+            "max_setpoint_cooling": {
+                "name": "Max cooling setpoint"
+            },
+            "cooling_base_temp": {
+                "name": "Cooling base temperature"
             }
         },
         "select": {
@@ -232,6 +241,15 @@
             },
             "legionella_start": {
                 "name": "Legionella start"
+            },
+            "heating_enable": {
+                "name": "Heating enable"
+            },
+            "cooling_enable": {
+                "name": "Cooling enable"
+            },
+            "pump_only_mode": {
+                "name": "Pump only mode"
             }
         }
     }

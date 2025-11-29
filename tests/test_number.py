@@ -191,7 +191,7 @@ class TestCircuitNumbers:
         """Test circuit number definitions are correct."""
         from econet_next.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 10
+        assert len(CIRCUIT_NUMBERS) == 13
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
@@ -204,6 +204,9 @@ class TestCircuitNumbers:
             "heating_curve",
             "curve_shift",
             "room_temp_correction",
+            "min_setpoint_cooling",
+            "max_setpoint_cooling",
+            "cooling_base_temp",
         }
         assert keys == expected_keys
 
@@ -379,3 +382,81 @@ class TestCircuitNumbers:
 
         # Unique ID should include circuit device_id
         assert "circuit_2" in number.unique_id
+
+    def test_circuit_min_setpoint_cooling_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit minimum cooling setpoint number."""
+        description = EconetNumberEntityDescription(
+            key="min_setpoint_cooling",
+            param_id="787",  # Circuit2MinSetPointCooling
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:snowflake-thermometer",
+            native_min_value=0,
+            native_max_value=30,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 787 = 18
+        assert number.native_value == 18.0
+        assert number.native_min_value == 18.0  # From allParams minv
+        assert number.native_max_value == 25.0  # From allParams maxv
+        assert number._attr_icon == "mdi:snowflake-thermometer"
+        assert number._device_id == "circuit_2"
+
+    def test_circuit_max_setpoint_cooling_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit maximum cooling setpoint number."""
+        description = EconetNumberEntityDescription(
+            key="max_setpoint_cooling",
+            param_id="788",  # Circuit2MaxSetPointCooling
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:snowflake-thermometer",
+            native_min_value=0,
+            native_max_value=30,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 788 = 25
+        assert number.native_value == 25.0
+        assert number.native_min_value == 18.0  # From allParams minv
+        assert number.native_max_value == 30.0  # From allParams maxv
+        assert number._attr_icon == "mdi:snowflake-thermometer"
+
+    def test_circuit_cooling_base_temp_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit cooling base temperature number."""
+        description = EconetNumberEntityDescription(
+            key="cooling_base_temp",
+            param_id="789",  # Circuit2MixerCoolBaseTemp
+            device_type="circuit",
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:snowflake",
+            native_min_value=0,
+            native_max_value=30,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 789 = 18
+        assert number.native_value == 18.0
+        assert number.native_min_value == 18.0  # From allParams minv
+        assert number.native_max_value == 25.0  # From allParams maxv
+        assert number._attr_icon == "mdi:snowflake"
+
+    @pytest.mark.asyncio
+    async def test_set_cooling_setpoint(self, coordinator: EconetNextCoordinator) -> None:
+        """Test setting circuit cooling setpoint."""
+        description = EconetNumberEntityDescription(
+            key="min_setpoint_cooling",
+            param_id="787",  # Circuit2MinSetPointCooling
+            device_type="circuit",
+            native_min_value=0,
+            native_max_value=30,
+        )
+
+        number = EconetNextNumber(coordinator, description, device_id="circuit_2")
+        await number.async_set_native_value(20.0)
+
+        coordinator.api.async_set_param.assert_called_once_with(787, 20)
+        assert coordinator.data["787"]["value"] == 20

@@ -128,6 +128,9 @@ def _get_circuit_param_id(circuit, number_key: str, coordinator: EconetNextCoord
         "curve_multiplier": circuit.curve_multiplier_param,
         "curve_shift": circuit.curve_shift_param,
         "room_temp_correction": circuit.room_temp_correction_param,
+        "min_setpoint_cooling": circuit.min_setpoint_cooling_param,
+        "max_setpoint_cooling": circuit.max_setpoint_cooling_param,
+        "cooling_base_temp": circuit.cooling_base_temp_param,
     }
     return mapping.get(number_key)
 

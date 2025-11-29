@@ -147,6 +147,8 @@ class EconetSwitchEntityDescription:
     device_type: DeviceType = DeviceType.CONTROLLER
     entity_category: EntityCategory | None = None
     icon: str | None = None
+    bit_position: int | None = None  # For bitmap-based switches
+    invert_logic: bool = False  # If True, bit=0 means ON, bit=1 means OFF
 
 
 # Controller sensors - read only
@@ -516,9 +518,7 @@ CIRCUIT_TYPE_MAPPING = {
 
 CIRCUIT_TYPE_OPTIONS = list(CIRCUIT_TYPE_MAPPING.values())
 
-CIRCUIT_TYPE_REVERSE = {
-    value: key for key, value in CIRCUIT_TYPE_MAPPING.items()
-}
+CIRCUIT_TYPE_REVERSE = {value: key for key, value in CIRCUIT_TYPE_MAPPING.items()}
 
 # Circuit sensors - read only temperature sensors
 # Note: These use a function-based approach since each circuit has the same pattern
@@ -666,6 +666,36 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=-10,
         native_max_value=10,
     ),
+    # Cooling min setpoint temperature
+    EconetNumberEntityDescription(
+        key="min_setpoint_cooling",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:snowflake-thermometer",
+        native_min_value=0,
+        native_max_value=30,
+    ),
+    # Cooling max setpoint temperature
+    EconetNumberEntityDescription(
+        key="max_setpoint_cooling",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:snowflake-thermometer",
+        native_min_value=0,
+        native_max_value=30,
+    ),
+    # Cooling base temperature
+    EconetNumberEntityDescription(
+        key="cooling_base_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:snowflake",
+        native_min_value=0,
+        native_max_value=30,
+    ),
 )
 
 
@@ -680,5 +710,40 @@ CIRCUIT_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
         options=CIRCUIT_TYPE_OPTIONS,
         value_map=CIRCUIT_TYPE_MAPPING,
         reverse_map=CIRCUIT_TYPE_REVERSE,
+    ),
+)
+
+
+# Circuit switch entities - bitmap-based settings
+CIRCUIT_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
+    # Heating enable (bit 20, inverted: 0=on, 1=off)
+    EconetSwitchEntityDescription(
+        key="heating_enable",
+        param_id="",  # Set dynamically per circuit (CircuitXSettings)
+        device_type=DeviceType.CIRCUIT,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:radiator",
+        bit_position=20,
+        invert_logic=True,  # Bit 0 = heating ON
+    ),
+    # Cooling enable (bit 17)
+    EconetSwitchEntityDescription(
+        key="cooling_enable",
+        param_id="",  # Set dynamically per circuit (CircuitXSettings)
+        device_type=DeviceType.CIRCUIT,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:snowflake",
+        bit_position=17,
+        invert_logic=False,  # Bit 1 = cooling ON
+    ),
+    # Pump only mode (bit 13)
+    EconetSwitchEntityDescription(
+        key="pump_only_mode",
+        param_id="",  # Set dynamically per circuit (CircuitXSettings)
+        device_type=DeviceType.CIRCUIT,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:pump",
+        bit_position=13,
+        invert_logic=False,  # Bit 1 = pump only ON
     ),
 )
