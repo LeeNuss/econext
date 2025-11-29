@@ -34,6 +34,11 @@
     }
   },
   "entity": {
+    "climate": {
+      "circuit": {
+        "name": "{device_name}"
+      }
+    },
     "sensor": {
       "software_version": {
         "name": "Software version"

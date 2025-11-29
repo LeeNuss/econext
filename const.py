@@ -13,7 +13,7 @@ from homeassistant.const import (
 DOMAIN = "econet_next"
 
 # Platforms to set up
-PLATFORMS: list[str] = ["number", "select", "sensor", "switch"]
+PLATFORMS: list[str] = ["climate", "number", "select", "sensor", "switch"]
 
 # Configuration keys
 CONF_HOST = "host"
@@ -86,8 +86,8 @@ class DeviceType(StrEnum):
     CONTROLLER = "controller"
     DHW = "dhw"
     BUFFER = "buffer"
-    HEATPUMP = "heatpump"
     CIRCUIT = "circuit"
+    HEATPUMP = "heatpump"
 
 
 @dataclass(frozen=True)
