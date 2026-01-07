@@ -250,6 +250,9 @@
             },
             "pump_only_mode": {
                 "name": "Pump only mode"
+            },
+            "pump_blockage": {
+                "name": "Pump blockage"
             }
         }
     }

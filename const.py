@@ -746,4 +746,14 @@ CIRCUIT_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
         bit_position=13,
         invert_logic=False,  # Bit 1 = pump only ON
     ),
+    # Pump blockage (bit 10)
+    EconetSwitchEntityDescription(
+        key="pump_blockage",
+        param_id="",  # Set dynamically per circuit (CircuitXSettings)
+        device_type=DeviceType.CIRCUIT,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:pump-off",
+        bit_position=10,
+        invert_logic=False,  # Bit 1 = blockage ON
+    ),
 )
