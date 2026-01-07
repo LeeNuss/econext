@@ -55,6 +55,17 @@ OPERATING_MODE_OPTIONS: list[str] = list(OPERATING_MODE_MAPPING.values())
 # Reverse mapping for setting values
 OPERATING_MODE_REVERSE: dict[str, int] = {v: k for k, v in OPERATING_MODE_MAPPING.items()}
 
+# Silent mode level - API parameter 1385
+SILENT_MODE_LEVEL_MAPPING: dict[int, str] = {
+    0: "level_1",
+    1: "level_2",
+    2: "level_3",
+}
+
+SILENT_MODE_LEVEL_OPTIONS: list[str] = list(SILENT_MODE_LEVEL_MAPPING.values())
+
+SILENT_MODE_LEVEL_REVERSE: dict[str, int] = {v: k for k, v in SILENT_MODE_LEVEL_MAPPING.items()}
+
 # DHW mode - API parameter 119
 DHW_MODE_MAPPING: dict[int, str] = {
     0: "off",
@@ -335,6 +346,14 @@ CONTROLLER_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
         options=OPERATING_MODE_OPTIONS,
         value_map=OPERATING_MODE_MAPPING,
         reverse_map=OPERATING_MODE_REVERSE,
+    ),
+    EconetSelectEntityDescription(
+        key="silent_mode_level",
+        param_id="1385",
+        icon="mdi:volume-low",
+        options=SILENT_MODE_LEVEL_OPTIONS,
+        value_map=SILENT_MODE_LEVEL_MAPPING,
+        reverse_map=SILENT_MODE_LEVEL_REVERSE,
     ),
 )
 

@@ -293,6 +293,14 @@
           "ufh": "Underfloor Heating",
           "fan_coil": "Fan Coil"
         }
+      },
+      "silent_mode_level": {
+        "name": "Silent mode level",
+        "state": {
+          "level_1": "Level 1",
+          "level_2": "Level 2",
+          "level_3": "Level 3"
+        }
       }
     },
     "switch": {
