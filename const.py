@@ -58,8 +58,7 @@ OPERATING_MODE_REVERSE: dict[str, int] = {v: k for k, v in OPERATING_MODE_MAPPIN
 # Silent mode level - API parameter 1385
 SILENT_MODE_LEVEL_MAPPING: dict[int, str] = {
     0: "level_1",
-    1: "level_2",
-    2: "level_3",
+    2: "level_2",
 }
 
 SILENT_MODE_LEVEL_OPTIONS: list[str] = list(SILENT_MODE_LEVEL_MAPPING.values())

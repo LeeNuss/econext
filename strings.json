@@ -270,8 +270,7 @@
                 "name": "Silent mode level",
                 "state": {
                     "level_1": "Level 1",
-                    "level_2": "Level 2",
-                    "level_3": "Level 3"
+                    "level_2": "Level 2"
                 }
             },
             "silent_mode_schedule": {
