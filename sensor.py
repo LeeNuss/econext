@@ -16,6 +16,7 @@ from .const import (
     DHW_SENSORS,
     DOMAIN,
     EconetSensorEntityDescription,
+    HEATPUMP_SCHEDULE_DIAGNOSTIC_SENSORS,
     HEATPUMP_SENSORS,
     SILENT_MODE_SCHEDULE_DIAGNOSTIC_SENSORS,
 )
@@ -147,6 +148,22 @@ async def async_setup_entry(
             else:
                 _LOGGER.debug(
                     "Skipping silent mode schedule diagnostic sensor %s - parameters %s/%s not found",
+                    description.key,
+                    description.param_id_am,
+                    description.param_id_pm,
+                )
+
+        # Add heat pump schedule diagnostic sensors
+        for description in HEATPUMP_SCHEDULE_DIAGNOSTIC_SENSORS:
+            # Check that both AM and PM params exist
+            if (
+                coordinator.get_param(description.param_id_am) is not None
+                and coordinator.get_param(description.param_id_pm) is not None
+            ):
+                entities.append(EconetNextScheduleDiagnosticSensor(coordinator, description, device_id="heatpump"))
+            else:
+                _LOGGER.debug(
+                    "Skipping heat pump schedule diagnostic sensor %s - parameters %s/%s not found",
                     description.key,
                     description.param_id_am,
                     description.param_id_pm,

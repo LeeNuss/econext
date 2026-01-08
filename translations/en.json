@@ -199,6 +199,27 @@
             },
             "schedule_saturday_decoded": {
                 "name": "Schedule Saturday (decoded)"
+            },
+            "heatpump_schedule_sunday_decoded": {
+                "name": "Heat pump schedule Sunday (decoded)"
+            },
+            "heatpump_schedule_monday_decoded": {
+                "name": "Heat pump schedule Monday (decoded)"
+            },
+            "heatpump_schedule_tuesday_decoded": {
+                "name": "Heat pump schedule Tuesday (decoded)"
+            },
+            "heatpump_schedule_wednesday_decoded": {
+                "name": "Heat pump schedule Wednesday (decoded)"
+            },
+            "heatpump_schedule_thursday_decoded": {
+                "name": "Heat pump schedule Thursday (decoded)"
+            },
+            "heatpump_schedule_friday_decoded": {
+                "name": "Heat pump schedule Friday (decoded)"
+            },
+            "heatpump_schedule_saturday_decoded": {
+                "name": "Heat pump schedule Saturday (decoded)"
             }
         },
         "number": {
@@ -414,6 +435,48 @@
             },
             "schedule_saturday_pm": {
                 "name": "Schedule Saturday PM"
+            },
+            "heatpump_schedule_sunday_am": {
+                "name": "Heat pump schedule Sunday AM"
+            },
+            "heatpump_schedule_sunday_pm": {
+                "name": "Heat pump schedule Sunday PM"
+            },
+            "heatpump_schedule_monday_am": {
+                "name": "Heat pump schedule Monday AM"
+            },
+            "heatpump_schedule_monday_pm": {
+                "name": "Heat pump schedule Monday PM"
+            },
+            "heatpump_schedule_tuesday_am": {
+                "name": "Heat pump schedule Tuesday AM"
+            },
+            "heatpump_schedule_tuesday_pm": {
+                "name": "Heat pump schedule Tuesday PM"
+            },
+            "heatpump_schedule_wednesday_am": {
+                "name": "Heat pump schedule Wednesday AM"
+            },
+            "heatpump_schedule_wednesday_pm": {
+                "name": "Heat pump schedule Wednesday PM"
+            },
+            "heatpump_schedule_thursday_am": {
+                "name": "Heat pump schedule Thursday AM"
+            },
+            "heatpump_schedule_thursday_pm": {
+                "name": "Heat pump schedule Thursday PM"
+            },
+            "heatpump_schedule_friday_am": {
+                "name": "Heat pump schedule Friday AM"
+            },
+            "heatpump_schedule_friday_pm": {
+                "name": "Heat pump schedule Friday PM"
+            },
+            "heatpump_schedule_saturday_am": {
+                "name": "Heat pump schedule Saturday AM"
+            },
+            "heatpump_schedule_saturday_pm": {
+                "name": "Heat pump schedule Saturday PM"
             }
         },
         "button": {

@@ -17,6 +17,7 @@ from .const import (
     DOMAIN,
     EconetNumberEntityDescription,
     HEATPUMP_NUMBERS,
+    HEATPUMP_SCHEDULE_NUMBERS,
     SILENT_MODE_SCHEDULE_NUMBERS,
 )
 from .coordinator import EconetNextCoordinator
@@ -93,6 +94,17 @@ async def async_setup_entry(
             else:
                 _LOGGER.debug(
                     "Skipping silent mode schedule %s - parameter %s not found",
+                    description.key,
+                    description.param_id,
+                )
+
+        # Add heat pump schedule number entities
+        for description in HEATPUMP_SCHEDULE_NUMBERS:
+            if coordinator.get_param(description.param_id) is not None:
+                entities.append(EconetNextNumber(coordinator, description, device_id="heatpump"))
+            else:
+                _LOGGER.debug(
+                    "Skipping heat pump schedule %s - parameter %s not found",
                     description.key,
                     description.param_id,
                 )

@@ -601,6 +601,49 @@ SILENT_MODE_SCHEDULE_DIAGNOSTIC_SENSORS: tuple[EconetSensorEntityDescription, ..
 )
 
 
+# Heat pump schedule entities - bitfield for 30-minute time slots
+# Generated programmatically to reduce repetition
+_HEATPUMP_SCHEDULE_DAYS = [
+    ("sunday", 926, 927),
+    ("monday", 928, 929),
+    ("tuesday", 930, 931),
+    ("wednesday", 932, 933),
+    ("thursday", 934, 935),
+    ("friday", 936, 937),
+    ("saturday", 938, 939),
+]
+
+HEATPUMP_SCHEDULE_NUMBERS: tuple[EconetNumberEntityDescription, ...] = tuple(
+    EconetNumberEntityDescription(
+        key=f"heatpump_schedule_{day}_{period}",
+        param_id=str(param_id),
+        device_type=DeviceType.HEATPUMP,
+        icon="mdi:calendar-clock",
+        entity_category=EntityCategory.CONFIG,
+        native_min_value=0,
+        native_max_value=4294967295,
+        native_step=1,
+    )
+    for day, am_id, pm_id in _HEATPUMP_SCHEDULE_DAYS
+    for period, param_id in [("am", am_id), ("pm", pm_id)]
+)
+
+
+# Heat pump schedule diagnostic sensors - decoded time ranges (one per day, combines AM/PM)
+HEATPUMP_SCHEDULE_DIAGNOSTIC_SENSORS: tuple[EconetSensorEntityDescription, ...] = tuple(
+    EconetSensorEntityDescription(
+        key=f"heatpump_schedule_{day}_decoded",
+        param_id=str(am_id),  # Use AM param as primary param_id
+        param_id_am=str(am_id),
+        param_id_pm=str(pm_id),
+        device_type=DeviceType.HEATPUMP,
+        icon="mdi:clock-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
+    for day, am_id, pm_id in _HEATPUMP_SCHEDULE_DAYS
+)
+
+
 # ============================================================================
 # DHW (Domestic Hot Water) Device
 # ============================================================================
