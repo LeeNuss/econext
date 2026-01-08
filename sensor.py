@@ -196,10 +196,11 @@ async def async_setup_entry(
 
                     # Use special sensor class for active_preset_mode
                     if description.key == "active_preset_mode":
-                        # Also check that eco and comfort params exist
+                        # Also check that eco, comfort and setpoint params exist
                         if (
                             coordinator.get_param(circuit.eco_param) is not None
                             and coordinator.get_param(circuit.comfort_param) is not None
+                            and coordinator.get_param(circuit.room_temp_setpoint_param) is not None
                         ):
                             entities.append(
                                 EconetNextActiveScheduleModeSensor(
@@ -207,6 +208,7 @@ async def async_setup_entry(
                                     circuit_desc,
                                     circuit.eco_param,
                                     circuit.comfort_param,
+                                    circuit.room_temp_setpoint_param,
                                     device_id=f"circuit_{circuit_num}",
                                 )
                             )
@@ -263,7 +265,7 @@ def _get_circuit_param_id(circuit, sensor_key: str) -> str | None:
         "thermostat_temp": circuit.thermostat_param,
         "calc_temp": circuit.calc_temp_param,
         "room_temp_setpoint": circuit.room_temp_setpoint_param,
-        "active_preset_mode": circuit.room_temp_setpoint_param,  # Uses setpoint as primary param
+        "active_preset_mode": circuit.eco_param,  # Uses eco as primary param for unique ID
     }
     return mapping.get(sensor_key)
 
@@ -408,12 +410,14 @@ class EconetNextActiveScheduleModeSensor(EconetNextSensor):
         description: EconetSensorEntityDescription,
         eco_param_id: str,
         comfort_param_id: str,
+        setpoint_param_id: str,
         device_id: str | None = None,
     ) -> None:
         """Initialize the active schedule mode sensor."""
         super().__init__(coordinator, description, device_id)
         self._eco_param_id = eco_param_id
         self._comfort_param_id = comfort_param_id
+        self._setpoint_param_id = setpoint_param_id
 
     @property
     def native_value(self) -> str | None:
@@ -423,7 +427,7 @@ class EconetNextActiveScheduleModeSensor(EconetNextSensor):
         to determine which mode the circuit is currently following.
         """
         # Get current room temperature setpoint (the target temp the system is using)
-        setpoint_param = self.coordinator.get_param(self._description.param_id)
+        setpoint_param = self.coordinator.get_param(self._setpoint_param_id)
         if not setpoint_param:
             return None
 
