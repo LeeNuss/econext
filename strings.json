@@ -255,6 +255,9 @@
             },
             "hdw_schedule_saturday_pm": {
                 "name": "DHW schedule Saturday PM"
+            },
+            "axen_work_state": {
+                "name": "Heat pump work state"
             }
         },
         "select": {

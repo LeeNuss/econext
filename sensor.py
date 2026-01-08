@@ -15,6 +15,7 @@ from .const import (
     DHW_SENSORS,
     DOMAIN,
     EconetSensorEntityDescription,
+    HEATPUMP_SENSORS,
 )
 from .coordinator import EconetNextCoordinator
 from .entity import EconetNextEntity
@@ -118,6 +119,20 @@ async def async_setup_entry(
                         description.param_id_am,
                         description.param_id_pm,
                     )
+
+    # Add heat pump sensors if heat pump device should be created
+    # Check if AxenWorkState parameter exists to determine if heat pump is present
+    heatpump_param = coordinator.get_param("1133")
+    if heatpump_param is not None:
+        for description in HEATPUMP_SENSORS:
+            if coordinator.get_param(description.param_id) is not None:
+                entities.append(EconetNextSensor(coordinator, description))
+            else:
+                _LOGGER.debug(
+                    "Skipping heat pump sensor %s - parameter %s not found",
+                    description.key,
+                    description.param_id,
+                )
 
     # Add circuit sensors if circuit is active
     for circuit_num, circuit in CIRCUITS.items():

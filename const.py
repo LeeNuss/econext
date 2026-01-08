@@ -356,22 +356,6 @@ CONTROLLER_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
         value_map=OPERATING_MODE_MAPPING,
         reverse_map=OPERATING_MODE_REVERSE,
     ),
-    EconetSelectEntityDescription(
-        key="silent_mode_level",
-        param_id="1385",
-        icon="mdi:volume-low",
-        options=SILENT_MODE_LEVEL_OPTIONS,
-        value_map=SILENT_MODE_LEVEL_MAPPING,
-        reverse_map=SILENT_MODE_LEVEL_REVERSE,
-    ),
-    EconetSelectEntityDescription(
-        key="silent_mode_schedule",
-        param_id="1386",
-        icon="mdi:calendar-clock",
-        options=SILENT_MODE_SCHEDULE_OPTIONS,
-        value_map=SILENT_MODE_SCHEDULE_MAPPING,
-        reverse_map=SILENT_MODE_SCHEDULE_REVERSE,
-    ),
 )
 
 
@@ -382,6 +366,45 @@ CONTROLLER_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
         key="cooling_support",
         param_id="485",
         icon="mdi:snowflake",
+    ),
+)
+
+
+# ============================================================================
+# Heat Pump Device
+# ============================================================================
+
+# Heat pump sensors - read only
+HEATPUMP_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
+    EconetSensorEntityDescription(
+        key="axen_work_state",
+        param_id="1133",
+        device_type=DeviceType.HEATPUMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        icon="mdi:state-machine",
+    ),
+)
+
+
+# Heat pump select entities - editable mode settings
+HEATPUMP_SELECTS: tuple[EconetSelectEntityDescription, ...] = (
+    EconetSelectEntityDescription(
+        key="silent_mode_level",
+        param_id="1385",
+        device_type=DeviceType.HEATPUMP,
+        icon="mdi:volume-low",
+        options=SILENT_MODE_LEVEL_OPTIONS,
+        value_map=SILENT_MODE_LEVEL_MAPPING,
+        reverse_map=SILENT_MODE_LEVEL_REVERSE,
+    ),
+    EconetSelectEntityDescription(
+        key="silent_mode_schedule",
+        param_id="1386",
+        device_type=DeviceType.HEATPUMP,
+        icon="mdi:calendar-clock",
+        options=SILENT_MODE_SCHEDULE_OPTIONS,
+        value_map=SILENT_MODE_SCHEDULE_MAPPING,
+        reverse_map=SILENT_MODE_SCHEDULE_REVERSE,
     ),
 )
 

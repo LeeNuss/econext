@@ -14,6 +14,7 @@ from .const import (
     DHW_SELECTS,
     DOMAIN,
     EconetSelectEntityDescription,
+    HEATPUMP_SELECTS,
 )
 from .coordinator import EconetNextCoordinator
 from .entity import EconetNextEntity
@@ -57,6 +58,20 @@ async def async_setup_entry(
                         description.key,
                         description.param_id,
                     )
+
+    # Add heat pump select entities if heat pump device should be created
+    # Check if AxenWorkState parameter exists to determine if heat pump is present
+    heatpump_param = coordinator.get_param("1133")
+    if heatpump_param is not None:
+        for description in HEATPUMP_SELECTS:
+            if coordinator.get_param(description.param_id) is not None:
+                entities.append(EconetNextSelect(coordinator, description))
+            else:
+                _LOGGER.debug(
+                    "Skipping heat pump select %s - parameter %s not found",
+                    description.key,
+                    description.param_id,
+                )
 
     # Add circuit select entities if circuit is active
     for circuit_num, circuit in CIRCUITS.items():
