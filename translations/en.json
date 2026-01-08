@@ -36,7 +36,14 @@
     "entity": {
         "climate": {
             "circuit": {
-                "name": "{device_name}"
+                "name": "{device_name}",
+                "state_attributes": {
+                    "preset_mode": {
+                        "state": {
+                            "schedule": "Schedule"
+                        }
+                    }
+                }
             }
         },
         "sensor": {

@@ -22,6 +22,9 @@ from .entity import EconetNextEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+# Custom preset for schedule mode
+PRESET_SCHEDULE = "schedule"
+
 
 class CircuitWorkState(IntEnum):
     """Circuit work state values."""
@@ -414,7 +417,7 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
-    _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT]
+    _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE]
     _attr_min_temp = 10.0
     _attr_max_temp = 35.0
     _attr_target_temperature_step = 0.5
@@ -460,7 +463,7 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     @property
     def hvac_modes(self) -> list[HVACMode]:
         """Return available HVAC modes based on heating/cooling enable settings and system operating mode."""
-        modes = [HVACMode.OFF, HVACMode.AUTO]
+        modes = [HVACMode.OFF]
 
         # Read settings bitmap
         settings_param = self.coordinator.get_param(self._settings_param)
@@ -512,7 +515,13 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     def target_temperature(self) -> float | None:
         """Return the target temperature based on current preset."""
         preset = self.preset_mode
-        if preset == PRESET_COMFORT:
+        if preset == PRESET_SCHEDULE:
+            # In schedule mode, return the active preset temperature
+            # _last_preset is updated by _detect_active_preset() in preset_mode property
+            active_preset = self._last_preset if self._last_preset in (PRESET_ECO, PRESET_COMFORT) else PRESET_COMFORT
+            param_id = self._comfort_param if active_preset == PRESET_COMFORT else self._eco_param
+            param = self.coordinator.get_param(param_id)
+        elif preset == PRESET_COMFORT:
             param = self.coordinator.get_param(self._comfort_param)
         elif preset == PRESET_ECO:
             param = self.coordinator.get_param(self._eco_param)
@@ -527,14 +536,33 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
 
     @property
     def hvac_mode(self) -> HVACMode:
-        """Return current HVAC mode."""
+        """Return current HVAC mode based on work state and heating/cooling enable settings."""
         work_state = self._get_work_state()
         if work_state == CircuitWorkState.OFF:
             return HVACMode.OFF
-        elif work_state == CircuitWorkState.AUTO:
-            return HVACMode.AUTO
-        else:
+
+        # Circuit is ON - determine mode from heating/cooling enable bits
+        settings_param = self.coordinator.get_param(self._settings_param)
+        if not settings_param:
+            return HVACMode.HEAT  # Default fallback
+
+        settings_value = int(settings_param.get("value", 0))
+
+        # Check bit 20: heating enable (inverted: 0=on, 1=off)
+        heating_enabled = ((settings_value >> 20) & 1) == 0
+
+        # Check bit 17: cooling enable (0=off, 1=on)
+        cooling_enabled = ((settings_value >> 17) & 1) == 1
+
+        # Determine HVAC mode
+        if heating_enabled and cooling_enabled:
+            return HVACMode.HEAT_COOL
+        elif heating_enabled:
             return HVACMode.HEAT
+        elif cooling_enabled:
+            return HVACMode.COOL
+        else:
+            return HVACMode.HEAT  # Default fallback
 
     @property
     def hvac_action(self) -> HVACAction | None:
@@ -543,14 +571,27 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
         if work_state == CircuitWorkState.OFF:
             return HVACAction.OFF
 
-        # Check if currently heating (compare current vs target)
+        # Determine if heating or cooling based on current mode
+        hvac_mode = self.hvac_mode
         current = self.current_temperature
         target = self.target_temperature
+
         if current is not None and target is not None:
-            if current < target - 0.5:  # Allowing for hysteresis
-                return HVACAction.HEATING
-            else:
-                return HVACAction.IDLE
+            # Allow for hysteresis (0.5°C tolerance)
+            if hvac_mode == HVACMode.COOL:
+                # Cooling mode: cool when current > target
+                if current > target + 0.5:
+                    return HVACAction.COOLING
+            elif hvac_mode == HVACMode.HEAT:
+                # Heating mode: heat when current < target
+                if current < target - 0.5:
+                    return HVACAction.HEATING
+            elif hvac_mode == HVACMode.HEAT_COOL:
+                # Auto heat/cool: determine action based on temperature
+                if current < target - 0.5:
+                    return HVACAction.HEATING
+                elif current > target + 0.5:
+                    return HVACAction.COOLING
 
         return HVACAction.IDLE
 
@@ -565,8 +606,10 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
             self._last_preset = PRESET_COMFORT
             return PRESET_COMFORT
         elif work_state == CircuitWorkState.AUTO:
-            # Auto mode - detect active preset by comparing setpoint with eco/comfort temps
-            return self._detect_active_preset()
+            # Schedule mode - device follows schedule
+            # Still detect active preset for display and temperature adjustment
+            self._detect_active_preset()  # Updates _last_preset
+            return PRESET_SCHEDULE
         return None
 
     def _detect_active_preset(self) -> str | None:
@@ -615,29 +658,71 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
         return 0
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """Set HVAC mode."""
+        """Set HVAC mode by updating work state and heating/cooling enable bits."""
         if hvac_mode == HVACMode.OFF:
-            work_state = CircuitWorkState.OFF
-        elif hvac_mode == HVACMode.AUTO:
-            work_state = CircuitWorkState.AUTO
-        elif hvac_mode == HVACMode.HEAT:
-            # When switching to HEAT, use last preset or default to COMFORT
-            if self._last_preset == PRESET_ECO:
-                work_state = CircuitWorkState.ECO
-            else:
-                # Default to COMFORT (also handles None case)
-                work_state = CircuitWorkState.COMFORT
+            # Turn off the circuit
+            _LOGGER.debug("Setting Circuit %s to OFF", self._circuit_num)
+            await self.coordinator.async_set_param(self._work_state_param, CircuitWorkState.OFF)
+            return
+
+        # For ON modes (HEAT/COOL/HEAT_COOL), update heating/cooling enable bits
+        settings_param = self.coordinator.get_param(self._settings_param)
+        if not settings_param:
+            _LOGGER.error("Cannot set HVAC mode - settings parameter not found")
+            return
+
+        settings_value = int(settings_param.get("value", 0))
+
+        # Determine desired heating/cooling state
+        if hvac_mode == HVACMode.HEAT:
+            heating_enabled = True
+            cooling_enabled = False
+        elif hvac_mode == HVACMode.COOL:
+            heating_enabled = False
+            cooling_enabled = True
+        elif hvac_mode == HVACMode.HEAT_COOL:
+            heating_enabled = True
+            cooling_enabled = True
         else:
             _LOGGER.error("Unsupported HVAC mode: %s", hvac_mode)
             return
 
+        # Update bit 20: heating enable (inverted: 0=on, 1=off)
+        if heating_enabled:
+            settings_value &= ~(1 << 20)  # Clear bit = ON
+        else:
+            settings_value |= 1 << 20  # Set bit = OFF
+
+        # Update bit 17: cooling enable (0=off, 1=on)
+        if cooling_enabled:
+            settings_value |= 1 << 17  # Set bit = ON
+        else:
+            settings_value &= ~(1 << 17)  # Clear bit = OFF
+
         _LOGGER.debug(
-            "Setting Circuit %s HVAC mode to %s (work_state=%s)",
+            "Setting Circuit %s HVAC mode to %s (heating=%s, cooling=%s, settings=0x%X)",
             self._circuit_num,
             hvac_mode,
-            work_state,
+            heating_enabled,
+            cooling_enabled,
+            settings_value,
         )
-        await self.coordinator.async_set_param(self._work_state_param, work_state)
+
+        # Update settings parameter
+        await self.coordinator.async_set_param(self._settings_param, settings_value)
+
+        # Ensure circuit is turned on if it was off
+        current_work_state = self._get_work_state()
+        if current_work_state == CircuitWorkState.OFF:
+            # Turn on with last preset or default to COMFORT
+            if self._last_preset == PRESET_ECO:
+                work_state = CircuitWorkState.ECO
+            elif self._last_preset == PRESET_SCHEDULE:
+                work_state = CircuitWorkState.AUTO
+            else:
+                work_state = CircuitWorkState.COMFORT
+            _LOGGER.debug("Turning on Circuit %s with work_state=%s", self._circuit_num, work_state)
+            await self.coordinator.async_set_param(self._work_state_param, work_state)
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set preset mode."""
@@ -645,6 +730,8 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
             work_state = CircuitWorkState.ECO
         elif preset_mode == PRESET_COMFORT:
             work_state = CircuitWorkState.COMFORT
+        elif preset_mode == PRESET_SCHEDULE:
+            work_state = CircuitWorkState.AUTO
         else:
             _LOGGER.error("Unsupported preset mode: %s", preset_mode)
             return
@@ -663,31 +750,47 @@ class CircuitClimate(EconetNextEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set target temperature.
 
-        In AUTO mode, this sets the eco or comfort temperature based on which
-        preset is currently active, allowing the schedule to continue using
-        the updated temperature.
+        In SCHEDULE mode, this sets the eco or comfort temperature based on which
+        preset is currently active (determined by comparing the setpoint), allowing
+        the schedule to continue using the updated temperature.
         """
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
 
-        # Set the temperature based on current preset (works in AUTO, ECO, and COMFORT modes)
+        # Determine which temperature parameter to update
         preset = self.preset_mode
-        if preset == PRESET_COMFORT:
+        if preset == PRESET_SCHEDULE:
+            # In schedule mode, update the currently active preset (eco or comfort)
+            # _last_preset is updated by _detect_active_preset() in preset_mode property
+            active_preset = self._last_preset if self._last_preset in (PRESET_ECO, PRESET_COMFORT) else PRESET_COMFORT
+            param_id = self._comfort_param if active_preset == PRESET_COMFORT else self._eco_param
+            _LOGGER.debug(
+                "Setting Circuit %s %s temperature to %s°C (SCHEDULE mode, active: %s)",
+                self._circuit_num,
+                active_preset,
+                temperature,
+                active_preset,
+            )
+        elif preset == PRESET_COMFORT:
             param_id = self._comfort_param
+            _LOGGER.debug(
+                "Setting Circuit %s COMFORT temperature to %s°C",
+                self._circuit_num,
+                temperature,
+            )
         elif preset == PRESET_ECO:
             param_id = self._eco_param
+            _LOGGER.debug(
+                "Setting Circuit %s ECO temperature to %s°C",
+                self._circuit_num,
+                temperature,
+            )
         else:
             _LOGGER.warning(
-                "Cannot set temperature - unable to determine active preset mode",
+                "Cannot set temperature - unable to determine active preset mode (preset=%s)",
+                preset,
             )
             return
 
-        _LOGGER.debug(
-            "Setting Circuit %s %s temperature to %s°C (HVAC mode: %s)",
-            self._circuit_num,
-            preset,
-            temperature,
-            self.hvac_mode,
-        )
         await self.coordinator.async_set_param(param_id, float(temperature))
