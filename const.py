@@ -417,6 +417,15 @@ HEATPUMP_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
         icon="mdi:pump",
         precision=0,
     ),
+    EconetSensorEntityDescription(
+        key="compressor_frequency",
+        param_id="1136",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="Hz",
+        icon="mdi:sine-wave",
+        precision=0,
+    ),
 )
 
 

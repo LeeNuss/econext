@@ -148,6 +148,15 @@
             },
             "hdw_schedule_saturday_decoded": {
                 "name": "DHW schedule Saturday (decoded)"
+            },
+            "system_pressure": {
+                "name": "System pressure"
+            },
+            "pump_speed": {
+                "name": "Pump speed"
+            },
+            "compressor_frequency": {
+                "name": "Compressor frequency"
             }
         },
         "number": {
@@ -255,12 +264,6 @@
             },
             "hdw_schedule_saturday_pm": {
                 "name": "DHW schedule Saturday PM"
-            },
-            "system_pressure": {
-                "name": "System pressure"
-            },
-            "pump_speed": {
-                "name": "Pump speed"
             },
             "purge_pwm_speed": {
                 "name": "Purge PWM speed"

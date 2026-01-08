@@ -80,6 +80,16 @@ class TestHeatPumpSensors:
         assert sensor.native_unit_of_measurement == "%"
         assert sensor.state_class == "measurement"
 
+    def test_compressor_frequency_sensor(self, coordinator):
+        """Test compressor frequency sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "compressor_frequency")
+        sensor = EconetNextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1136"
+        assert sensor.native_value == 32
+        assert sensor.native_unit_of_measurement == "Hz"
+        assert sensor.state_class == "measurement"
+
 
 class TestHeatPumpNumbers:
     """Test heat pump number definitions."""
