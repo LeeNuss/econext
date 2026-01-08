@@ -483,6 +483,15 @@ HEATPUMP_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
         icon="mdi:sine-wave",
         precision=0,
     ),
+    EconetSensorEntityDescription(
+        key="water_flow_rate",
+        param_id="612",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="L/min",
+        icon="mdi:water-pump",
+        precision=1,
+    ),
 )
 
 
