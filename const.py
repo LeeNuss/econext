@@ -558,6 +558,31 @@ HEATPUMP_BUTTONS: tuple[EconetButtonEntityDescription, ...] = (
 )
 
 
+# Heat pump switch entities
+HEATPUMP_SWITCHES: tuple[EconetSwitchEntityDescription, ...] = (
+    # Manual defrost - bit 0 of AXEN_REGISTER_2103_RW
+    EconetSwitchEntityDescription(
+        key="manual_defrost",
+        param_id="1271",
+        device_type=DeviceType.HEATPUMP,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:snowflake-melt",
+        bit_position=0,
+        invert_logic=False,  # 1 = enabled, 0 = disabled
+    ),
+    # Purge function - bit 14 of AXEN_REGISTER_2103_RW
+    EconetSwitchEntityDescription(
+        key="purge_enable",
+        param_id="1271",
+        device_type=DeviceType.HEATPUMP,
+        entity_category=EntityCategory.CONFIG,
+        icon="mdi:air-purifier",
+        bit_position=14,
+        invert_logic=False,  # 1 = enabled, 0 = disabled
+    ),
+)
+
+
 # Silent mode schedule entities - bitfield for 30-minute time slots
 # Generated programmatically to reduce repetition
 _SILENT_MODE_SCHEDULE_DAYS = [
@@ -956,9 +981,9 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=30,
         native_max_value=55,
     ),
-    # Base temperature
+    # Fixed temperature
     EconetNumberEntityDescription(
-        key="base_temp",
+        key="fixed_temp",
         param_id="",  # Set dynamically per circuit
         device_type=DeviceType.CIRCUIT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -1025,9 +1050,9 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=0,
         native_max_value=30,
     ),
-    # Cooling base temperature
+    # Cooling fixed temperature
     EconetNumberEntityDescription(
-        key="cooling_base_temp",
+        key="cooling_fixed_temp",
         param_id="",  # Set dynamically per circuit
         device_type=DeviceType.CIRCUIT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,

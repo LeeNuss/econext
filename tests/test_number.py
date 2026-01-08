@@ -199,14 +199,14 @@ class TestCircuitNumbers:
             "hysteresis",
             "max_temp_radiator",
             "max_temp_heat",
-            "base_temp",
+            "fixed_temp",
             "temp_reduction",
             "heating_curve",
             "curve_shift",
             "room_temp_correction",
             "min_setpoint_cooling",
             "max_setpoint_cooling",
-            "cooling_base_temp",
+            "cooling_fixed_temp",
         }
         assert keys == expected_keys
 
@@ -424,10 +424,10 @@ class TestCircuitNumbers:
         assert number.native_max_value == 30.0  # From allParams maxv
         assert number._attr_icon == "mdi:snowflake-thermometer"
 
-    def test_circuit_cooling_base_temp_number(self, coordinator: EconetNextCoordinator) -> None:
-        """Test circuit cooling base temperature number."""
+    def test_circuit_cooling_fixed_temp_number(self, coordinator: EconetNextCoordinator) -> None:
+        """Test circuit cooling fixed temperature number."""
         description = EconetNumberEntityDescription(
-            key="cooling_base_temp",
+            key="cooling_fixed_temp",
             param_id="789",  # Circuit2MixerCoolBaseTemp
             device_type="circuit",
             native_unit_of_measurement=UnitOfTemperature.CELSIUS,

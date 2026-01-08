@@ -54,7 +54,7 @@ class Circuit:
     hysteresis_param: str
     max_temp_radiator_param: str
     max_temp_heat_param: str
-    base_temp_param: str
+    fixed_temp_param: str
     temp_reduction_param: str
     curve_multiplier_param: str
     curve_radiator_param: str
@@ -67,7 +67,7 @@ class Circuit:
     # Cooling parameters
     min_setpoint_cooling_param: str
     max_setpoint_cooling_param: str
-    cooling_base_temp_param: str
+    cooling_fixed_temp_param: str
 
     # Schedule parameters (AM/PM for each day of week)
     schedule_sunday_am: str
@@ -100,7 +100,7 @@ CIRCUITS = {
         hysteresis_param="240",
         max_temp_radiator_param="242",
         max_temp_heat_param="243",
-        base_temp_param="261",
+        fixed_temp_param="261",
         temp_reduction_param="262",
         curve_multiplier_param="263",
         curve_radiator_param="273",
@@ -111,7 +111,7 @@ CIRCUITS = {
         type_settings_param="269",
         min_setpoint_cooling_param="903",
         max_setpoint_cooling_param="904",
-        cooling_base_temp_param="739",
+        cooling_fixed_temp_param="739",
         schedule_sunday_am="247",
         schedule_sunday_pm="248",
         schedule_monday_am="249",
@@ -140,7 +140,7 @@ CIRCUITS = {
         hysteresis_param="290",
         max_temp_radiator_param="292",
         max_temp_heat_param="293",
-        base_temp_param="311",
+        fixed_temp_param="311",
         temp_reduction_param="312",
         curve_multiplier_param="313",
         curve_radiator_param="323",
@@ -151,7 +151,7 @@ CIRCUITS = {
         type_settings_param="319",
         min_setpoint_cooling_param="787",
         max_setpoint_cooling_param="788",
-        cooling_base_temp_param="789",
+        cooling_fixed_temp_param="789",
         schedule_sunday_am="297",
         schedule_sunday_pm="298",
         schedule_monday_am="299",
@@ -180,7 +180,7 @@ CIRCUITS = {
         hysteresis_param="340",
         max_temp_radiator_param="342",
         max_temp_heat_param="343",
-        base_temp_param="361",
+        fixed_temp_param="361",
         temp_reduction_param="362",
         curve_multiplier_param="363",
         curve_radiator_param="373",
@@ -191,7 +191,7 @@ CIRCUITS = {
         type_settings_param="369",
         min_setpoint_cooling_param="837",
         max_setpoint_cooling_param="838",
-        cooling_base_temp_param="839",
+        cooling_fixed_temp_param="839",
         schedule_sunday_am="881",
         schedule_sunday_pm="882",
         schedule_monday_am="883",
@@ -220,7 +220,7 @@ CIRCUITS = {
         hysteresis_param="948",
         max_temp_radiator_param="950",
         max_temp_heat_param="951",
-        base_temp_param="969",
+        fixed_temp_param="969",
         temp_reduction_param="970",
         curve_multiplier_param="971",
         curve_radiator_param="981",
@@ -231,7 +231,7 @@ CIRCUITS = {
         type_settings_param="977",
         min_setpoint_cooling_param="905",
         max_setpoint_cooling_param="906",
-        cooling_base_temp_param="990",
+        cooling_fixed_temp_param="990",
         schedule_sunday_am="955",
         schedule_sunday_pm="956",
         schedule_monday_am="957",
@@ -260,7 +260,7 @@ CIRCUITS = {
         hysteresis_param="999",
         max_temp_radiator_param="1001",
         max_temp_heat_param="1002",
-        base_temp_param="1020",
+        fixed_temp_param="1020",
         temp_reduction_param="1021",
         curve_multiplier_param="1022",
         curve_radiator_param="1032",
@@ -271,7 +271,7 @@ CIRCUITS = {
         type_settings_param="1028",
         min_setpoint_cooling_param="907",
         max_setpoint_cooling_param="908",
-        cooling_base_temp_param="1041",
+        cooling_fixed_temp_param="1041",
         schedule_sunday_am="1006",
         schedule_sunday_pm="1007",
         schedule_monday_am="1008",
@@ -300,7 +300,7 @@ CIRCUITS = {
         hysteresis_param="757",
         max_temp_radiator_param="759",
         max_temp_heat_param="760",
-        base_temp_param="768",
+        fixed_temp_param="768",
         temp_reduction_param="769",
         curve_multiplier_param="770",
         curve_radiator_param="774",
@@ -311,7 +311,7 @@ CIRCUITS = {
         type_settings_param="772",
         min_setpoint_cooling_param="909",
         max_setpoint_cooling_param="910",
-        cooling_base_temp_param="784",
+        cooling_fixed_temp_param="784",
         schedule_sunday_am="867",
         schedule_sunday_pm="868",
         schedule_monday_am="869",
@@ -340,7 +340,7 @@ CIRCUITS = {
         hysteresis_param="807",
         max_temp_radiator_param="809",
         max_temp_heat_param="810",
-        base_temp_param="818",
+        fixed_temp_param="818",
         temp_reduction_param="819",
         curve_multiplier_param="820",
         curve_radiator_param="824",
@@ -351,7 +351,7 @@ CIRCUITS = {
         type_settings_param="822",
         min_setpoint_cooling_param="911",
         max_setpoint_cooling_param="912",
-        cooling_base_temp_param="834",
+        cooling_fixed_temp_param="834",
         schedule_sunday_am="845",
         schedule_sunday_pm="846",
         schedule_monday_am="847",

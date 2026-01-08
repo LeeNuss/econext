@@ -36,7 +36,14 @@
     "entity": {
         "climate": {
             "circuit": {
-                "name": "{device_name}"
+                "name": "{device_name}",
+                "state_attributes": {
+                    "preset_mode": {
+                        "state": {
+                            "schedule": "Schedule"
+                        }
+                    }
+                }
             }
         },
         "sensor": {
@@ -262,8 +269,8 @@
             "max_temp_heat": {
                 "name": "Max heating temperature"
             },
-            "base_temp": {
-                "name": "Base temperature"
+            "fixed_temp": {
+                "name": "Fixed temperature"
             },
             "temp_reduction": {
                 "name": "Temperature reduction"
@@ -283,8 +290,8 @@
             "max_setpoint_cooling": {
                 "name": "Max cooling setpoint"
             },
-            "cooling_base_temp": {
-                "name": "Cooling base temperature"
+            "cooling_fixed_temp": {
+                "name": "Cooling fixed temperature"
             },
             "hdw_schedule_sunday_am": {
                 "name": "DHW schedule Sunday AM"
@@ -565,6 +572,12 @@
             },
             "pump_blockage": {
                 "name": "Pump blockage"
+            },
+            "manual_defrost": {
+                "name": "Manual defrost"
+            },
+            "purge_enable": {
+                "name": "Purge enable"
             }
         }
     }

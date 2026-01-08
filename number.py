@@ -15,10 +15,10 @@ from .const import (
     DHW_NUMBERS,
     DHW_SCHEDULE_NUMBERS,
     DOMAIN,
-    EconetNumberEntityDescription,
     HEATPUMP_NUMBERS,
     HEATPUMP_SCHEDULE_NUMBERS,
     SILENT_MODE_SCHEDULE_NUMBERS,
+    EconetNumberEntityDescription,
 )
 from .coordinator import EconetNextCoordinator
 from .entity import EconetNextEntity
@@ -201,14 +201,14 @@ def _get_circuit_param_id(circuit, number_key: str, coordinator: EconetNextCoord
         "hysteresis": circuit.hysteresis_param,
         "max_temp_radiator": circuit.max_temp_radiator_param,
         "max_temp_heat": circuit.max_temp_heat_param,
-        "base_temp": circuit.base_temp_param,
+        "fixed_temp": circuit.fixed_temp_param,
         "temp_reduction": circuit.temp_reduction_param,
         "curve_multiplier": circuit.curve_multiplier_param,
         "curve_shift": circuit.curve_shift_param,
         "room_temp_correction": circuit.room_temp_correction_param,
         "min_setpoint_cooling": circuit.min_setpoint_cooling_param,
         "max_setpoint_cooling": circuit.max_setpoint_cooling_param,
-        "cooling_base_temp": circuit.cooling_base_temp_param,
+        "cooling_fixed_temp": circuit.cooling_fixed_temp_param,
     }
     return mapping.get(number_key)
 

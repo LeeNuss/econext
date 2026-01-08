@@ -14,6 +14,7 @@ from .const import (
     DHW_SWITCHES,
     DOMAIN,
     EconetSwitchEntityDescription,
+    HEATPUMP_SWITCHES,
 )
 from .coordinator import EconetNextCoordinator
 from .entity import EconetNextEntity
@@ -57,6 +58,19 @@ async def async_setup_entry(
                         description.key,
                         description.param_id,
                     )
+
+    # Add heat pump switch entities if heat pump device should be created
+    heatpump_param = coordinator.get_param("1133")
+    if heatpump_param is not None:
+        for description in HEATPUMP_SWITCHES:
+            if coordinator.get_param(description.param_id) is not None:
+                entities.append(EconetNextSwitch(coordinator, description, device_id="heatpump"))
+            else:
+                _LOGGER.debug(
+                    "Skipping heat pump switch %s - parameter %s not found",
+                    description.key,
+                    description.param_id,
+                )
 
     # Add circuit switch entities if circuit is active
     for circuit_num, circuit in CIRCUITS.items():
