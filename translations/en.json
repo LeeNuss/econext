@@ -187,6 +187,9 @@
             "water_flow_rate": {
                 "name": "Water flow rate"
             },
+            "fan_speed": {
+                "name": "Fan Speed"
+            },
             "silent_mode_schedule_sunday_decoded": {
                 "name": "Silent mode schedule Sunday (decoded)"
             },

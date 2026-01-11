@@ -476,7 +476,7 @@ HEATPUMP_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
     ),
     EconetSensorEntityDescription(
         key="compressor_frequency",
-        param_id="1136",
+        param_id="1365",
         device_type=DeviceType.HEATPUMP,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="Hz",
@@ -490,6 +490,15 @@ HEATPUMP_SENSORS: tuple[EconetSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="L/min",
         icon="mdi:water-pump",
+        precision=1,
+    ),
+    EconetSensorEntityDescription(
+        key="fan_speed",
+        param_id="1366",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="rpm",
+        icon="mdi:fan",
         precision=1,
     ),
 )
