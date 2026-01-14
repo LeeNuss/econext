@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff format:*)",
+      "Bash(ruff check:*)",
+      "Bash(pytest:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
