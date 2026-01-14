@@ -1105,6 +1105,15 @@ CIRCUIT_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=-20,
         native_max_value=20,
     ),
+    # Curve multiplier
+    EconetNumberEntityDescription(
+        key="curve_multiplier",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:arrow-left-right",
+        native_min_value=-20,
+        native_max_value=20,
+    ),
     # Room temperature correction
     EconetNumberEntityDescription(
         key="room_temp_correction",

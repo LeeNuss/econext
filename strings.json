@@ -306,6 +306,9 @@
             "curve_shift": {
                 "name": "Curve shift"
             },
+            "curve_multiplier": {
+                "name": "Curve multiplier"
+            },
             "room_temp_correction": {
                 "name": "Room temperature correction"
             },
