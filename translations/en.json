@@ -282,6 +282,9 @@
             "legionella_hour": {
                 "name": "Legionella hour"
             },
+            "temperature_correction": {
+                "name": "DHW Temperature correction"
+            },
             "comfort_temp": {
                 "name": "Comfort temperature"
             },

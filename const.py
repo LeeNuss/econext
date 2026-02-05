@@ -854,6 +854,16 @@ DHW_NUMBERS: tuple[EconetNumberEntityDescription, ...] = (
         native_min_value=0,
         native_max_value=23,
     ),
+    # DHW temperature correction
+    EconetNumberEntityDescription(
+        key="temperature_correction",
+        param_id="481",
+        device_type=DeviceType.DHW,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-plus",
+        native_min_value=0,
+        native_max_value=20,
+    ),
 )
 
 
