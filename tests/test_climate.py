@@ -12,8 +12,8 @@ from homeassistant.components.climate.const import PRESET_COMFORT, PRESET_ECO
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
-from econet_next.climate import CIRCUITS, CircuitClimate, CircuitWorkState, async_setup_entry
-from econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.climate import CIRCUITS, CircuitClimate, CircuitWorkState, async_setup_entry
+from custom_components.econet_next.coordinator import EconetNextCoordinator
 
 
 @pytest.fixture(autouse=True)
@@ -162,7 +162,7 @@ class TestCircuitClimate:
 
     def test_preset_modes(self, circuit_2_entity: CircuitClimate) -> None:
         """Test entity has correct preset modes."""
-        from econet_next.climate import PRESET_SCHEDULE
+        from custom_components.econet_next.climate import PRESET_SCHEDULE
 
         assert circuit_2_entity._attr_preset_modes == [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE]
 
@@ -308,7 +308,7 @@ class TestCircuitClimate:
 
     def test_preset_mode_schedule(self, circuit_2_entity: CircuitClimate) -> None:
         """Test preset mode returns SCHEDULE when in schedule/auto mode."""
-        from econet_next.climate import PRESET_SCHEDULE
+        from custom_components.econet_next.climate import PRESET_SCHEDULE
 
         # From fixture: Circuit2WorkState = 3 (schedule/auto)
         # Should return PRESET_SCHEDULE
@@ -479,7 +479,7 @@ class TestCircuitClimate:
         self, circuit_2_entity: CircuitClimate, coordinator: EconetNextCoordinator
     ) -> None:
         """Test setting preset mode to SCHEDULE."""
-        from econet_next.climate import PRESET_SCHEDULE
+        from custom_components.econet_next.climate import PRESET_SCHEDULE
 
         await circuit_2_entity.async_set_preset_mode(PRESET_SCHEDULE)
 
@@ -535,7 +535,7 @@ class TestCircuitClimate:
 
     def test_preset_mode_schedule_detects_eco(self, coordinator: EconetNextCoordinator) -> None:
         """Test that SCHEDULE mode updates _last_preset when setpoint matches ECO temp."""
-        from econet_next.climate import PRESET_SCHEDULE
+        from custom_components.econet_next.climate import PRESET_SCHEDULE
 
         coordinator.data["286"]["value"] = CircuitWorkState.AUTO
         coordinator.data["289"]["value"] = 19.0  # Eco temp
@@ -562,7 +562,7 @@ class TestCircuitClimate:
 
     def test_preset_mode_schedule_detects_comfort(self, coordinator: EconetNextCoordinator) -> None:
         """Test that SCHEDULE mode updates _last_preset when setpoint matches COMFORT temp."""
-        from econet_next.climate import PRESET_SCHEDULE
+        from custom_components.econet_next.climate import PRESET_SCHEDULE
 
         coordinator.data["286"]["value"] = CircuitWorkState.AUTO
         coordinator.data["289"]["value"] = 19.0  # Eco temp

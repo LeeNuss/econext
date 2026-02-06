@@ -5,10 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from custom_components.econet_next.binary_sensor import EconetNextBinarySensor
-from custom_components.econet_next.const import (
-    ALARM_BINARY_SENSORS,
-    EconetBinarySensorEntityDescription,
-)
+from custom_components.econet_next.const import ALARM_BINARY_SENSORS
 from custom_components.econet_next.coordinator import EconetNextCoordinator
 
 

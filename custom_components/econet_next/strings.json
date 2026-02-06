@@ -2,29 +2,24 @@
     "config": {
         "step": {
             "user": {
-                "title": "Connect to ecoNET Device",
-                "description": "Enter the connection details for your ecoNET device.",
+                "title": "Connect to ecoNET Gateway",
+                "description": "Enter the connection details for your econet-gm3-gateway.",
                 "data": {
                     "host": "Host",
-                    "port": "Port",
-                    "username": "Username",
-                    "password": "Password"
+                    "port": "Port"
                 }
             },
             "reconfigure": {
-                "title": "Reconfigure ecoNET Device",
-                "description": "Update the connection details for your ecoNET device.",
+                "title": "Reconfigure ecoNET Gateway",
+                "description": "Update the connection details for your econet-gm3-gateway.",
                 "data": {
                     "host": "Host",
-                    "port": "Port",
-                    "username": "Username",
-                    "password": "Password"
+                    "port": "Port"
                 }
             }
         },
         "error": {
-            "cannot_connect": "Failed to connect to device",
-            "invalid_auth": "Invalid username or password",
+            "cannot_connect": "Failed to connect to gateway",
             "unknown": "Unexpected error occurred"
         },
         "abort": {

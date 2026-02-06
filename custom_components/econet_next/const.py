@@ -27,15 +27,12 @@ PLATFORMS: list[str] = [
 # Configuration keys
 CONF_HOST = "host"
 CONF_PORT = "port"
-CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
 
 # Default values
-DEFAULT_PORT = 8080
+DEFAULT_PORT = 8000
 
 # API endpoints
-API_ENDPOINT_ALL_PARAMS = "/econet/allParams"
-API_ENDPOINT_NEW_PARAM = "/econet/newParam"
+API_ENDPOINT_PARAMETERS = "/api/parameters"
 
 # Update interval in seconds
 UPDATE_INTERVAL = 30

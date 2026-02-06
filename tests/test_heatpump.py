@@ -4,17 +4,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from econet_next.button import EconetNextButton
-from econet_next.const import (
+from custom_components.econet_next.button import EconetNextButton
+from custom_components.econet_next.const import (
     HEATPUMP_BUTTONS,
     HEATPUMP_NUMBERS,
     HEATPUMP_SELECTS,
     HEATPUMP_SENSORS,
 )
-from econet_next.coordinator import EconetNextCoordinator
-from econet_next.number import EconetNextNumber
-from econet_next.select import EconetNextSelect
-from econet_next.sensor import EconetNextSensor
+from custom_components.econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.number import EconetNextNumber
+from custom_components.econet_next.select import EconetNextSelect
+from custom_components.econet_next.sensor import EconetNextSensor
 
 
 @pytest.fixture(autouse=True)
@@ -85,7 +85,7 @@ class TestHeatPumpSensors:
         sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "compressor_frequency")
         sensor = EconetNextSensor(coordinator, sensor_desc, device_id="heatpump")
 
-        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1136"
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1365"
         assert sensor.native_value == 32
         assert sensor.native_unit_of_measurement == "Hz"
         assert sensor.state_class == "measurement"

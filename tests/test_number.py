@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.const import UnitOfTemperature
 
-from econet_next.const import CONTROLLER_NUMBERS, EconetNumberEntityDescription
-from econet_next.coordinator import EconetNextCoordinator
-from econet_next.number import EconetNextNumber
+from custom_components.econet_next.const import CONTROLLER_NUMBERS, EconetNumberEntityDescription
+from custom_components.econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.number import EconetNextNumber
 
 
 @pytest.fixture(autouse=True)
@@ -189,9 +189,9 @@ class TestCircuitNumbers:
 
     def test_circuit_number_definitions(self) -> None:
         """Test circuit number definitions are correct."""
-        from econet_next.const import CIRCUIT_NUMBERS, DeviceType
+        from custom_components.econet_next.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 13
+        assert len(CIRCUIT_NUMBERS) == 14
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
@@ -203,6 +203,7 @@ class TestCircuitNumbers:
             "temp_reduction",
             "heating_curve",
             "curve_shift",
+            "curve_multiplier",
             "room_temp_correction",
             "min_setpoint_cooling",
             "max_setpoint_cooling",

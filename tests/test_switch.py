@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from econet_next.const import CONTROLLER_SWITCHES, EconetSwitchEntityDescription
-from econet_next.coordinator import EconetNextCoordinator
-from econet_next.switch import EconetNextSwitch
+from custom_components.econet_next.const import CONTROLLER_SWITCHES, EconetSwitchEntityDescription
+from custom_components.econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.switch import EconetNextSwitch
 
 
 @pytest.fixture(autouse=True)

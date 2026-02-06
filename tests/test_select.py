@@ -4,15 +4,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from econet_next.const import (
+from custom_components.econet_next.const import (
     CONTROLLER_SELECTS,
     OPERATING_MODE_MAPPING,
     OPERATING_MODE_OPTIONS,
     OPERATING_MODE_REVERSE,
     EconetSelectEntityDescription,
 )
-from econet_next.coordinator import EconetNextCoordinator
-from econet_next.select import EconetNextSelect
+from custom_components.econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.select import EconetNextSelect
 
 
 @pytest.fixture(autouse=True)
@@ -271,7 +271,12 @@ class TestCircuitTypeSelect:
 
     def test_circuit_type_select_definitions(self) -> None:
         """Test circuit type select definitions are correct."""
-        from econet_next.const import CIRCUIT_SELECTS, CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, DeviceType
+        from custom_components.econet_next.const import (
+            CIRCUIT_SELECTS,
+            CIRCUIT_TYPE_MAPPING,
+            CIRCUIT_TYPE_OPTIONS,
+            DeviceType,
+        )
 
         assert len(CIRCUIT_SELECTS) == 1
         circuit_type = CIRCUIT_SELECTS[0]
@@ -283,7 +288,7 @@ class TestCircuitTypeSelect:
 
     def test_circuit_type_radiator(self, coordinator: EconetNextCoordinator) -> None:
         """Test circuit type select for radiator (type=1)."""
-        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+        from custom_components.econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
 
         # Circuit 1 has type=1 (radiator)
         description = EconetSelectEntityDescription(
@@ -304,7 +309,7 @@ class TestCircuitTypeSelect:
 
     def test_circuit_type_ufh(self, coordinator: EconetNextCoordinator) -> None:
         """Test circuit type select for UFH (type=2)."""
-        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+        from custom_components.econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
 
         # Circuit 2 has type=2 (UFH)
         description = EconetSelectEntityDescription(
@@ -325,7 +330,7 @@ class TestCircuitTypeSelect:
     @pytest.mark.asyncio
     async def test_set_circuit_type(self, coordinator: EconetNextCoordinator) -> None:
         """Test setting circuit type."""
-        from econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
+        from custom_components.econet_next.const import CIRCUIT_TYPE_MAPPING, CIRCUIT_TYPE_OPTIONS, CIRCUIT_TYPE_REVERSE
 
         description = EconetSelectEntityDescription(
             key="circuit_type",

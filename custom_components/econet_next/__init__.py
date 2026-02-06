@@ -3,12 +3,12 @@
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import EconetAuthError, EconetConnectionError, EconetNextApi
+from .api import EconetConnectionError, EconetNextApi
 from .const import DEFAULT_PORT, DOMAIN, PLATFORMS
 from .coordinator import EconetNextCoordinator
 
@@ -26,8 +26,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconetNextConfigEntry) -
     api = EconetNextApi(
         host=entry.data[CONF_HOST],
         port=entry.data.get(CONF_PORT, DEFAULT_PORT),
-        username=entry.data[CONF_USERNAME],
-        password=entry.data[CONF_PASSWORD],
         session=session,
     )
 
@@ -37,8 +35,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconetNextConfigEntry) -
     # Fetch initial data
     try:
         await coordinator.async_config_entry_first_refresh()
-    except EconetAuthError as err:
-        raise ConfigEntryAuthFailed(f"Authentication failed: {err}") from err
     except EconetConnectionError as err:
         raise ConfigEntryNotReady(f"Connection failed: {err}") from err
 

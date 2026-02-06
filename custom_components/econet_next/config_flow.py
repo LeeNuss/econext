@@ -4,12 +4,12 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
-from .api import EconetAuthError, EconetConnectionError, EconetNextApi
+from .api import EconetConnectionError, EconetNextApi
 from .const import DEFAULT_PORT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,8 +18,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
     }
 )
 
@@ -44,8 +42,6 @@ class EconetNextConfigFlow(ConfigFlow, domain=DOMAIN):
                 info = await self._async_validate_input(user_input)
             except EconetConnectionError:
                 errors["base"] = "cannot_connect"
-            except EconetAuthError:
-                errors["base"] = "invalid_auth"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -75,8 +71,6 @@ class EconetNextConfigFlow(ConfigFlow, domain=DOMAIN):
                 await self._async_validate_input(user_input)
             except EconetConnectionError:
                 errors["base"] = "cannot_connect"
-            except EconetAuthError:
-                errors["base"] = "invalid_auth"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -94,8 +88,6 @@ class EconetNextConfigFlow(ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_HOST, default=current_data.get(CONF_HOST, "")): str,
                     vol.Optional(CONF_PORT, default=current_data.get(CONF_PORT, DEFAULT_PORT)): int,
-                    vol.Required(CONF_USERNAME, default=current_data.get(CONF_USERNAME, "")): str,
-                    vol.Required(CONF_PASSWORD): str,
                 }
             ),
             errors=errors,
@@ -107,8 +99,6 @@ class EconetNextConfigFlow(ConfigFlow, domain=DOMAIN):
         api = EconetNextApi(
             host=data[CONF_HOST],
             port=data[CONF_PORT],
-            username=data[CONF_USERNAME],
-            password=data[CONF_PASSWORD],
             session=session,
         )
 

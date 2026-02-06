@@ -8,10 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp import ClientSession
 
-# Add grandparent directory to path so we can import custom_components.econet_next
-# The path structure is: .../custom_components/econet_next/tests/conftest.py
-# We need to add .../custom_components to sys.path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Add project root to path so econet_next package can be imported
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
@@ -23,16 +20,43 @@ def fixture_path() -> Path:
 
 @pytest.fixture
 def all_params_response(fixture_path: Path) -> dict:
-    """Load the allParams.json fixture as API response format (direct format)."""
+    """Load the allParams.json fixture in index-keyed format.
+
+    This represents the format AFTER the API client transforms the gateway response.
+    Used by coordinator and entity tests.
+    """
     with open(fixture_path / "allParams.json") as f:
         return json.load(f)
 
 
 @pytest.fixture
 def all_params_parsed(all_params_response: dict) -> dict:
-    """Return the parsed params dict (same as response in direct format)."""
-    # The API returns params directly, not wrapped in allParams
+    """Return the parsed params dict (index-keyed format)."""
     return all_params_response
+
+
+@pytest.fixture
+def gateway_api_response(all_params_response: dict) -> dict:
+    """Create a gateway-format API response from the allParams fixture.
+
+    Gateway returns: {"timestamp": "...", "parameters": {"Name": {"index": N, "value": V, ...}}}
+    """
+    parameters = {}
+    for index_str, param_data in all_params_response.items():
+        name = param_data.get("name", f"param_{index_str}")
+        # Handle duplicate names by appending index
+        if name in parameters:
+            name = f"{name}_{index_str}"
+        parameters[name] = {
+            "index": int(index_str),
+            "value": param_data.get("value"),
+            "type": param_data.get("type", 2),
+            "unit": param_data.get("unit", 0),
+            "writable": param_data.get("writable", False),
+            "min": param_data.get("minv"),
+            "max": param_data.get("maxv"),
+        }
+    return {"timestamp": "2026-02-06T12:00:00", "parameters": parameters}
 
 
 @pytest.fixture

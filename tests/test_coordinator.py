@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from econet_next.api import EconetApiError, EconetNextApi
-from econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.api import EconetApiError, EconetNextApi
+from custom_components.econet_next.coordinator import EconetNextCoordinator
 
 
 @pytest.fixture

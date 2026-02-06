@@ -6,9 +6,9 @@ import pytest
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 
-from econet_next.const import CONTROLLER_SENSORS, DeviceType, EconetSensorEntityDescription
-from econet_next.coordinator import EconetNextCoordinator
-from econet_next.sensor import EconetNextSensor
+from custom_components.econet_next.const import CONTROLLER_SENSORS, DeviceType, EconetSensorEntityDescription
+from custom_components.econet_next.coordinator import EconetNextCoordinator
+from custom_components.econet_next.sensor import EconetNextSensor
 
 
 @pytest.fixture(autouse=True)
@@ -221,7 +221,7 @@ class TestEnumSensor:
 
     def test_flap_valve_enum_value(self, coordinator: EconetNextCoordinator) -> None:
         """Test flap valve sensor returns mapped enum value."""
-        from econet_next.const import FLAP_VALVE_STATE_MAPPING, FLAP_VALVE_STATE_OPTIONS
+        from custom_components.econet_next.const import FLAP_VALVE_STATE_MAPPING, FLAP_VALVE_STATE_OPTIONS
 
         description = EconetSensorEntityDescription(
             key="flap_valve_state",
@@ -270,15 +270,16 @@ class TestCircuitSensors:
 
     def test_circuit_sensor_definitions(self) -> None:
         """Test circuit sensor definitions are correct."""
-        from econet_next.const import CIRCUIT_SENSORS
+        from custom_components.econet_next.const import CIRCUIT_SENSORS
 
-        assert len(CIRCUIT_SENSORS) == 3
+        assert len(CIRCUIT_SENSORS) == 4
         keys = {s.key for s in CIRCUIT_SENSORS}
-        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint"}
+        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint", "active_preset_mode"}
 
-        # All should be temperature sensors
-        for sensor in CIRCUIT_SENSORS:
-            assert sensor.device_class == SensorDeviceClass.TEMPERATURE
+        # Temperature sensors should have correct attributes
+        temp_sensors = [s for s in CIRCUIT_SENSORS if s.device_class == SensorDeviceClass.TEMPERATURE]
+        assert len(temp_sensors) == 3
+        for sensor in temp_sensors:
             assert sensor.state_class == SensorStateClass.MEASUREMENT
             assert sensor.native_unit_of_measurement == UnitOfTemperature.CELSIUS
             assert sensor.precision == 1
@@ -383,7 +384,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_empty_schedule(self) -> None:
         """Test decoding a schedule with no active periods."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         result = decode_schedule_bitfield(0, is_am=True)
         assert result == "No active periods"
@@ -393,7 +394,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_am_single_slot(self) -> None:
         """Test decoding a single 30-minute slot in AM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bit 0 = 00:00-00:30
         result = decode_schedule_bitfield(1, is_am=True)
@@ -409,7 +410,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_pm_single_slot(self) -> None:
         """Test decoding a single 30-minute slot in PM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bit 0 in PM = 12:00-12:30
         result = decode_schedule_bitfield(1, is_am=False)
@@ -425,7 +426,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_am_continuous_range(self) -> None:
         """Test decoding a continuous time range in AM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bits 8-10 set (256 + 512 + 1024 = 1792) = 04:00-05:30
         result = decode_schedule_bitfield(1792, is_am=True)
@@ -437,7 +438,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_pm_continuous_range(self) -> None:
         """Test decoding a continuous time range in PM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bits 8-10 set (1792) in PM = 16:00-17:30
         result = decode_schedule_bitfield(1792, is_am=False)
@@ -449,7 +450,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_multiple_ranges(self) -> None:
         """Test decoding multiple separate time ranges."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bits 0-1 and 4-5 set (3 + 48 = 51) = 00:00-01:00, 02:00-03:00
         result = decode_schedule_bitfield(51, is_am=True)
@@ -461,7 +462,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_all_slots_am(self) -> None:
         """Test decoding all 24 slots in AM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # All 24 bits set (2^24 - 1 = 16777215) = 00:00-12:00
         result = decode_schedule_bitfield(16777215, is_am=True)
@@ -469,7 +470,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_all_slots_pm(self) -> None:
         """Test decoding all 24 slots in PM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # All 24 bits set (16777215) in PM = 12:00-24:00
         result = decode_schedule_bitfield(16777215, is_am=False)
@@ -477,7 +478,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_last_slot_am(self) -> None:
         """Test decoding the last slot in AM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bit 23 (last slot) = 11:30-12:00
         result = decode_schedule_bitfield(8388608, is_am=True)
@@ -485,7 +486,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_last_slot_pm(self) -> None:
         """Test decoding the last slot in PM period."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Bit 23 in PM = 23:30-24:00
         result = decode_schedule_bitfield(8388608, is_am=False)
@@ -493,7 +494,7 @@ class TestScheduleBitfieldDecoder:
 
     def test_decode_complex_pattern(self) -> None:
         """Test decoding a complex realistic pattern."""
-        from econet_next.sensor import decode_schedule_bitfield
+        from custom_components.econet_next.sensor import decode_schedule_bitfield
 
         # Morning: 06:00-09:00 (bits 12-17 = 258048)
         # Evening: 17:00-22:00 (bits 34-43 would be in PM, but we only have 24 bits)
@@ -511,7 +512,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_combined_schedule(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor combining AM and PM schedules."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # Set DHW Sunday AM schedule: bits 8-10 set (1792) = 04:00-05:30
         coordinator.data["120"] = {"id": 120, "value": 1792}
@@ -532,7 +533,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_only_am_active(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor with only AM schedule active."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # AM schedule active
         coordinator.data["120"] = {"id": 120, "value": 1792}
@@ -553,7 +554,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_only_pm_active(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor with only PM schedule active."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # AM schedule empty
         coordinator.data["120"] = {"id": 120, "value": 0}
@@ -574,7 +575,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_no_active_periods(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor with no active periods in either AM or PM."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # Both schedules empty
         coordinator.data["120"] = {"id": 120, "value": 0}
@@ -594,7 +595,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_none_value(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor returns None when param value is None."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # Set AM value to None
         coordinator.data["120"] = {"id": 120, "value": None}
@@ -614,7 +615,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_missing_am_param(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor returns None when AM param is missing."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # Remove AM param from data
         if "120" in coordinator.data:
@@ -635,7 +636,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_missing_pm_param(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor returns None when PM param is missing."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # Remove PM param from data
         coordinator.data["120"] = {"id": 120, "value": 0}
@@ -656,7 +657,7 @@ class TestScheduleDiagnosticSensor:
 
     def test_diagnostic_sensor_all_day(self, coordinator: EconetNextCoordinator) -> None:
         """Test diagnostic sensor with all slots active (full day)."""
-        from econet_next.sensor import EconetNextScheduleDiagnosticSensor
+        from custom_components.econet_next.sensor import EconetNextScheduleDiagnosticSensor
 
         # All 24 bits set for both AM and PM (16777215)
         coordinator.data["120"] = {"id": 120, "value": 16777215}

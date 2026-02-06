@@ -5,9 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from econet_next.api import (
+from custom_components.econet_next.api import (
     EconetApiError,
-    EconetAuthError,
     EconetConnectionError,
     EconetNextApi,
 )
@@ -20,27 +19,23 @@ class TestEconetNextApi:
         """Test API client initialization."""
         api = EconetNextApi(
             host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
+            port=8000,
             session=mock_session,
         )
 
         assert api.host == "192.168.1.100"
-        assert api.port == 8080
-        assert api._base_url == "http://192.168.1.100:8080"
+        assert api.port == 8000
+        assert api._base_url == "http://192.168.1.100:8000"
 
     def test_init_custom_port(self, mock_session: MagicMock) -> None:
         """Test API client with custom port."""
         api = EconetNextApi(
             host="192.168.1.100",
-            port=80,
-            username="admin",
-            password="password",
+            port=9000,
             session=mock_session,
         )
 
-        assert api._base_url == "http://192.168.1.100:80"
+        assert api._base_url == "http://192.168.1.100:9000"
 
 
 class TestFetchAllParams:
@@ -50,14 +45,13 @@ class TestFetchAllParams:
     async def test_fetch_all_params_success(
         self,
         mock_session: MagicMock,
-        all_params_response: dict,
-        all_params_parsed: dict,
+        gateway_api_response: dict,
     ) -> None:
         """Test successful fetch of all parameters."""
         # Setup mock response
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value=all_params_response)
+        mock_response.json = AsyncMock(return_value=gateway_api_response)
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
@@ -65,42 +59,60 @@ class TestFetchAllParams:
 
         api = EconetNextApi(
             host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
+            port=8000,
             session=mock_session,
         )
 
         result = await api.async_fetch_all_params()
 
         assert isinstance(result, dict)
-        assert len(result) == len(all_params_parsed)
-        # Check some known parameters
+        # Check that the result is keyed by index (string)
         assert "10" in result  # UID
         assert "374" in result  # Nazwa (device name)
         assert result["10"]["name"] == "UID"
+        assert result["10"]["value"] == "2L7SDPN6KQ38CIH2401K01U"
         assert result["374"]["name"] == "Nazwa"
+        assert result["374"]["value"] == "ecoMAX360i"
 
     @pytest.mark.asyncio
-    async def test_fetch_all_params_auth_error(self, mock_session: MagicMock) -> None:
-        """Test authentication error handling."""
+    async def test_fetch_all_params_transforms_fields(
+        self,
+        mock_session: MagicMock,
+    ) -> None:
+        """Test that gateway fields are correctly mapped."""
+        gateway_response = {
+            "timestamp": "2026-02-06T12:00:00",
+            "parameters": {
+                "TestParam": {
+                    "index": 42,
+                    "value": 100,
+                    "type": 2,
+                    "unit": 1,
+                    "writable": True,
+                    "min": 10.0,
+                    "max": 200.0,
+                }
+            },
+        }
+
         mock_response = AsyncMock()
-        mock_response.status = 401
+        mock_response.status = 200
+        mock_response.json = AsyncMock(return_value=gateway_response)
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
         mock_session.get = MagicMock(return_value=mock_response)
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="wrong_password",
-            session=mock_session,
-        )
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
+        result = await api.async_fetch_all_params()
 
-        with pytest.raises(EconetAuthError):
-            await api.async_fetch_all_params()
+        assert "42" in result
+        param = result["42"]
+        assert param["value"] == 100
+        assert param["name"] == "TestParam"
+        assert param["minv"] == 10.0
+        assert param["maxv"] == 200.0
+        assert param["writable"] is True
 
     @pytest.mark.asyncio
     async def test_fetch_all_params_api_error(self, mock_session: MagicMock) -> None:
@@ -112,13 +124,7 @@ class TestFetchAllParams:
 
         mock_session.get = MagicMock(return_value=mock_response)
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
-        )
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
 
         with pytest.raises(EconetApiError, match="status 500"):
             await api.async_fetch_all_params()
@@ -128,38 +134,37 @@ class TestFetchAllParams:
         """Test connection error handling."""
         mock_session.get = MagicMock(side_effect=aiohttp.ClientError("Connection failed"))
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
-        )
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
 
         with pytest.raises(EconetConnectionError, match="Connection error"):
             await api.async_fetch_all_params()
 
     @pytest.mark.asyncio
-    async def test_fetch_all_params_invalid_json(self, mock_session: MagicMock) -> None:
-        """Test handling of invalid JSON in allParams field."""
+    async def test_fetch_builds_index_to_name_mapping(
+        self,
+        mock_session: MagicMock,
+    ) -> None:
+        """Test that fetching builds the index-to-name reverse mapping."""
+        gateway_response = {
+            "parameters": {
+                "ParamA": {"index": 10, "value": "test"},
+                "ParamB": {"index": 20, "value": 42},
+            }
+        }
+
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value={"allParams": "not valid json {{{"})
+        mock_response.json = AsyncMock(return_value=gateway_response)
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
         mock_session.get = MagicMock(return_value=mock_response)
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
-        )
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
+        await api.async_fetch_all_params()
 
-        with pytest.raises(EconetApiError, match="Failed to parse"):
-            await api.async_fetch_all_params()
+        assert api._index_to_name["10"] == "ParamA"
+        assert api._index_to_name["20"] == "ParamB"
 
 
 class TestSetParam:
@@ -167,51 +172,65 @@ class TestSetParam:
 
     @pytest.mark.asyncio
     async def test_set_param_success(self, mock_session: MagicMock) -> None:
-        """Test successful parameter set."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
+        """Test successful parameter set via POST."""
+        # First, populate the index-to-name mapping
+        fetch_response = AsyncMock()
+        fetch_response.status = 200
+        fetch_response.json = AsyncMock(
+            return_value={
+                "parameters": {
+                    "dhwTarget": {"index": 103, "value": 40},
+                }
+            }
         )
+        fetch_response.__aenter__ = AsyncMock(return_value=fetch_response)
+        fetch_response.__aexit__ = AsyncMock(return_value=None)
 
+        set_response = AsyncMock()
+        set_response.status = 200
+        set_response.__aenter__ = AsyncMock(return_value=set_response)
+        set_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session.get = MagicMock(return_value=fetch_response)
+        mock_session.post = MagicMock(return_value=set_response)
+
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        # Fetch first to build mapping
+        await api.async_fetch_all_params()
+
+        # Now set a param
         result = await api.async_set_param(103, 45)
 
         assert result is True
-        # Verify the correct URL was called
-        mock_session.get.assert_called_once()
-        call_args = mock_session.get.call_args
-        assert "/econet/newParam" in call_args[0][0]
-        assert call_args[1]["params"]["newParamName"] == "103"
-        assert call_args[1]["params"]["newParamValue"] == "45"
+        # Verify POST was called with correct URL and JSON body
+        mock_session.post.assert_called_once()
+        call_args = mock_session.post.call_args
+        assert "/api/parameters/dhwTarget" in call_args[0][0]
+        assert call_args[1]["json"] == {"value": 45}
 
     @pytest.mark.asyncio
-    async def test_set_param_auth_error(self, mock_session: MagicMock) -> None:
-        """Test authentication error when setting parameter."""
+    async def test_set_param_unknown_index(self, mock_session: MagicMock) -> None:
+        """Test setting a parameter with unknown index raises error."""
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        with pytest.raises(EconetApiError, match="Unknown parameter index"):
+            await api.async_set_param(99999, 45)
+
+    @pytest.mark.asyncio
+    async def test_set_param_api_error(self, mock_session: MagicMock) -> None:
+        """Test API error when setting parameter."""
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
+        api._index_to_name = {"103": "dhwTarget"}
+
         mock_response = AsyncMock()
-        mock_response.status = 401
+        mock_response.status = 500
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
-        mock_session.get = MagicMock(return_value=mock_response)
+        mock_session.post = MagicMock(return_value=mock_response)
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
-        )
-
-        with pytest.raises(EconetAuthError):
+        with pytest.raises(EconetApiError, match="status 500"):
             await api.async_set_param(103, 45)
 
 
@@ -222,24 +241,18 @@ class TestTestConnection:
     async def test_connection_returns_device_info(
         self,
         mock_session: MagicMock,
-        all_params_response: dict,
+        gateway_api_response: dict,
     ) -> None:
         """Test that test_connection returns device info."""
         mock_response = AsyncMock()
         mock_response.status = 200
-        mock_response.json = AsyncMock(return_value=all_params_response)
+        mock_response.json = AsyncMock(return_value=gateway_api_response)
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
         mock_session.get = MagicMock(return_value=mock_response)
 
-        api = EconetNextApi(
-            host="192.168.1.100",
-            port=8080,
-            username="admin",
-            password="password",
-            session=mock_session,
-        )
+        api = EconetNextApi(host="192.168.1.100", port=8000, session=mock_session)
 
         result = await api.async_test_connection()
 
