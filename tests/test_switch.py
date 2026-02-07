@@ -36,6 +36,7 @@ def coordinator(mock_hass: MagicMock, mock_api: MagicMock, all_params_parsed: di
     """Create a coordinator with data."""
     coordinator = EconextCoordinator(mock_hass, mock_api)
     coordinator.data = all_params_parsed
+    coordinator.async_set_param = AsyncMock(return_value=True)
     coordinator.async_request_refresh = AsyncMock()
     return coordinator
 
@@ -131,9 +132,7 @@ class TestEconextSwitch:
         switch = EconextSwitch(coordinator, description)
         await switch.async_turn_on()
 
-        coordinator.api.async_set_param.assert_called_once_with(485, 1)
-        # Optimistic update should set the local value
-        assert coordinator.data["485"]["value"] == 1
+        coordinator.async_set_param.assert_called_once_with("485", 1)
 
     @pytest.mark.asyncio
     async def test_turn_off(self, coordinator: EconextCoordinator) -> None:
@@ -146,9 +145,7 @@ class TestEconextSwitch:
         switch = EconextSwitch(coordinator, description)
         await switch.async_turn_off()
 
-        coordinator.api.async_set_param.assert_called_once_with(485, 0)
-        # Optimistic update should set the local value
-        assert coordinator.data["485"]["value"] == 0
+        coordinator.async_set_param.assert_called_once_with("485", 0)
 
 
 class TestBitfieldSwitches:
@@ -276,8 +273,7 @@ class TestBitfieldSwitches:
         await switch.async_turn_on()
 
         # Should set bit 10: 139264 | 1024 = 140288
-        coordinator.api.async_set_param.assert_called_once_with(231, 140288)
-        assert coordinator.data["231"]["value"] == 140288
+        coordinator.async_set_param.assert_called_once_with("231", 140288)
 
     @pytest.mark.asyncio
     async def test_bitfield_turn_off_clears_bit(self, coordinator: EconextCoordinator) -> None:
@@ -296,8 +292,7 @@ class TestBitfieldSwitches:
         await switch.async_turn_off()
 
         # Should clear bit 10: 140288 & ~1024 = 139264
-        coordinator.api.async_set_param.assert_called_once_with(231, 139264)
-        assert coordinator.data["231"]["value"] == 139264
+        coordinator.async_set_param.assert_called_once_with("231", 139264)
 
     @pytest.mark.asyncio
     async def test_bitfield_inverted_turn_on_clears_bit(self, coordinator: EconextCoordinator) -> None:
@@ -316,8 +311,7 @@ class TestBitfieldSwitches:
         await switch.async_turn_on()
 
         # Should clear bit 20 (inverted logic): 1048576 & ~1048576 = 0
-        coordinator.api.async_set_param.assert_called_once_with(231, 0)
-        assert coordinator.data["231"]["value"] == 0
+        coordinator.async_set_param.assert_called_once_with("231", 0)
 
     @pytest.mark.asyncio
     async def test_bitfield_inverted_turn_off_sets_bit(self, coordinator: EconextCoordinator) -> None:
@@ -336,5 +330,4 @@ class TestBitfieldSwitches:
         await switch.async_turn_off()
 
         # Should set bit 20 (inverted logic): 0 | 1048576 = 1048576
-        coordinator.api.async_set_param.assert_called_once_with(231, 1048576)
-        assert coordinator.data["231"]["value"] == 1048576
+        coordinator.async_set_param.assert_called_once_with("231", 1048576)

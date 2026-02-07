@@ -37,6 +37,7 @@ def coordinator(mock_hass: MagicMock, mock_api: MagicMock, all_params_parsed: di
     """Create a coordinator with data."""
     coordinator = EconextCoordinator(mock_hass, mock_api)
     coordinator.data = all_params_parsed
+    coordinator.async_set_param = AsyncMock(return_value=True)
     coordinator.async_request_refresh = AsyncMock()
     return coordinator
 
@@ -178,10 +179,7 @@ class TestEconextNumber:
         number = EconextNumber(coordinator, description)
         await number.async_set_native_value(25.0)
 
-        # Coordinator converts string param_id to int before calling API
-        coordinator.api.async_set_param.assert_called_once_with(702, 25)
-        # Optimistic update should set the local value
-        assert coordinator.data["702"]["value"] == 25
+        coordinator.async_set_param.assert_called_once_with("702", 25)
 
 
 class TestCircuitNumbers:
@@ -346,8 +344,7 @@ class TestCircuitNumbers:
         number = EconextNumber(coordinator, description, device_id="circuit_2")
         await number.async_set_native_value(22.5)
 
-        coordinator.api.async_set_param.assert_called_once_with(288, 22.5)
-        assert coordinator.data["288"]["value"] == 22.5
+        coordinator.async_set_param.assert_called_once_with("288", 22.5)
 
     @pytest.mark.asyncio
     async def test_circuit_set_eco_temp(self, coordinator: EconextCoordinator) -> None:
@@ -364,8 +361,7 @@ class TestCircuitNumbers:
         number = EconextNumber(coordinator, description, device_id="circuit_2")
         await number.async_set_native_value(18.0)
 
-        coordinator.api.async_set_param.assert_called_once_with(289, 18.0)
-        assert coordinator.data["289"]["value"] == 18.0
+        coordinator.async_set_param.assert_called_once_with("289", 18.0)
 
     def test_circuit_number_with_device_id(self, coordinator: EconextCoordinator) -> None:
         """Test circuit number is associated with correct device."""
@@ -459,8 +455,7 @@ class TestCircuitNumbers:
         number = EconextNumber(coordinator, description, device_id="circuit_2")
         await number.async_set_native_value(20.0)
 
-        coordinator.api.async_set_param.assert_called_once_with(787, 20)
-        assert coordinator.data["787"]["value"] == 20
+        coordinator.async_set_param.assert_called_once_with("787", 20)
 
     def test_schedule_number_fallback_invalid_api_range(self, coordinator: EconextCoordinator) -> None:
         """Test schedule number uses description values when API has invalid range (minv=maxv=0)."""

@@ -425,10 +425,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
     @property
     def supported_features(self) -> int:
         """Return the list of supported features."""
-        return (
-            ClimateEntityFeature.PRESET_MODE
-            | ClimateEntityFeature.TARGET_TEMPERATURE
-        )
+        return ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
 
     def __init__(
         self,
@@ -567,9 +564,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
             return HVACAction.OFF
 
         # Per-circuit pump status from HP controller
-        pump_param = self.coordinator.get_param(
-            str(self._HP_CIRCUIT_PUMP_BASE + self._circuit_num - 1)
-        )
+        pump_param = self.coordinator.get_param(str(self._HP_CIRCUIT_PUMP_BASE + self._circuit_num - 1))
         if pump_param is not None and not int(pump_param.get("value", 0)):
             return HVACAction.IDLE
 

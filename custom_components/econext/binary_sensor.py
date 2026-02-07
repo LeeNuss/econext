@@ -49,10 +49,7 @@ class EconextAlarmActiveBinarySensor(EconextEntity, BinarySensorEntity):
         active = self.coordinator.active_alarms
         return {
             "active_alarm_count": len(active),
-            "active_alarm_codes": [
-                {"code": a.get("code"), "name": get_alarm_name(a.get("code", 0))}
-                for a in active
-            ],
+            "active_alarm_codes": [{"code": a.get("code"), "name": get_alarm_name(a.get("code", 0))} for a in active],
         }
 
     def _is_value_valid(self) -> bool:

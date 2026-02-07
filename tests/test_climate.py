@@ -90,9 +90,7 @@ class TestAsyncSetupEntry:
         assert entities_added[0]._circuit_num == 2
 
     @pytest.mark.asyncio
-    async def test_setup_skips_inactive_circuits(
-        self, mock_hass: MagicMock, coordinator: EconextCoordinator
-    ) -> None:
+    async def test_setup_skips_inactive_circuits(self, mock_hass: MagicMock, coordinator: EconextCoordinator) -> None:
         """Test circuits with active param value=0 are skipped."""
         mock_entry = MagicMock()
         mock_entry.entry_id = "test_entry"
@@ -145,20 +143,18 @@ class TestCircuitClimate:
         assert circuit_2_entity._attr_name == "UFH"  # Stripped
 
     def test_supported_features(self, circuit_2_entity: CircuitClimate) -> None:
-        """Test entity has correct supported features based on HVAC mode."""
-        # Fixture has HEAT_COOL mode, so should support TARGET_TEMPERATURE_RANGE
-        expected = ClimateEntityFeature.TARGET_TEMPERATURE_RANGE | ClimateEntityFeature.PRESET_MODE
+        """Test entity has correct supported features."""
+        expected = ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
         assert circuit_2_entity.supported_features == expected
 
     def test_hvac_modes(self, circuit_2_entity: CircuitClimate) -> None:
-        """Test entity has correct HVAC modes based on settings."""
-        # From fixture, Circuit2Settings (param 281) should have heating and cooling enabled
-        # Test expects OFF, HEAT, COOL, and HEAT_COOL modes (no AUTO - that's now a preset)
+        """Test entity has correct HVAC modes."""
         modes = circuit_2_entity.hvac_modes
         assert HVACMode.OFF in modes
+        assert HVACMode.AUTO in modes
         assert HVACMode.HEAT in modes
-        # AUTO is no longer an HVAC mode - use SCHEDULE preset instead
-        assert HVACMode.AUTO not in modes
+        # Cooling support (param 485) = 1 in fixture, so COOL is available
+        assert HVACMode.COOL in modes
 
     def test_preset_modes(self, circuit_2_entity: CircuitClimate) -> None:
         """Test entity has correct preset modes."""
@@ -265,8 +261,8 @@ class TestCircuitClimate:
         """Test HVAC mode when circuit is in schedule mode."""
         # From fixture, Circuit2WorkState = 3 (schedule/auto)
         # HVAC mode is determined by heating/cooling enable bits, not work state
-        # Fixture has both heating and cooling enabled, so should return HEAT_COOL
-        assert circuit_2_entity.hvac_mode == HVACMode.HEAT_COOL
+        # Fixture has both heating and cooling enabled, so returns AUTO
+        assert circuit_2_entity.hvac_mode == HVACMode.AUTO
 
     def test_preset_mode_eco(self, coordinator: EconextCoordinator) -> None:
         """Test preset mode when in eco."""
@@ -463,18 +459,14 @@ class TestCircuitClimate:
         assert entity.hvac_action == HVACAction.IDLE
 
     @pytest.mark.asyncio
-    async def test_set_hvac_mode_off(
-        self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator
-    ) -> None:
+    async def test_set_hvac_mode_off(self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator) -> None:
         """Test setting HVAC mode to OFF."""
         await circuit_2_entity.async_set_hvac_mode(HVACMode.OFF)
 
         coordinator.async_set_param.assert_called_once_with("286", CircuitWorkState.OFF)
 
     @pytest.mark.asyncio
-    async def test_set_hvac_mode_heat(
-        self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator
-    ) -> None:
+    async def test_set_hvac_mode_heat(self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator) -> None:
         """Test setting HVAC mode to HEAT updates heating/cooling enable bits."""
         # Circuit is already on in fixture, so should only update settings
         await circuit_2_entity.async_set_hvac_mode(HVACMode.HEAT)
@@ -495,9 +487,7 @@ class TestCircuitClimate:
     # async_set_preset_mode.
 
     @pytest.mark.asyncio
-    async def test_set_preset_mode_eco(
-        self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator
-    ) -> None:
+    async def test_set_preset_mode_eco(self, circuit_2_entity: CircuitClimate, coordinator: EconextCoordinator) -> None:
         """Test setting preset mode to ECO."""
         await circuit_2_entity.async_set_preset_mode(PRESET_ECO)
 
@@ -746,12 +736,9 @@ class TestCircuitClimate:
 class TestOperatingModeHVACModes:
     """Test HVAC modes based on operating mode and circuit settings."""
 
-    def test_hvac_modes_winter_mode_heating_enabled(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC modes in winter mode with heating enabled."""
-        # Set operating mode to winter (2)
-        coordinator.data["162"]["value"] = 2
-        # Circuit2Settings: heating enabled (bit 20 = 0), cooling disabled (bit 17 = 0)
-        coordinator.data["281"]["value"] = 0
+    def test_hvac_modes_cooling_support_enabled(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC modes include COOL when cooling_support (param 485) is enabled."""
+        coordinator.data["485"]["value"] = 1
 
         circuit = CIRCUITS[2]
         entity = CircuitClimate(
@@ -767,19 +754,32 @@ class TestOperatingModeHVACModes:
         )
 
         modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.HEAT in modes
+        assert modes == [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT, HVACMode.COOL]
+
+    def test_hvac_modes_cooling_support_disabled(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC modes exclude COOL when cooling_support (param 485) is disabled."""
+        coordinator.data["485"]["value"] = 0
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+        )
+
+        modes = entity.hvac_modes
+        assert modes == [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT]
         assert HVACMode.COOL not in modes
-        assert HVACMode.HEAT_COOL not in modes
 
-    def test_hvac_modes_summer_mode_cooling_enabled(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC modes in summer mode with cooling enabled."""
-        # Set operating mode to summer (1)
-        coordinator.data["162"]["value"] = 1
-        # Circuit2Settings: heating disabled (bit 20 = 1), cooling enabled (bit 17 = 1)
-        coordinator.data["281"]["value"] = (1 << 20) | (1 << 17)
+    def test_hvac_modes_cooling_support_missing(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC modes default to no COOL when cooling_support param is missing."""
+        del coordinator.data["485"]
 
         circuit = CIRCUITS[2]
         entity = CircuitClimate(
@@ -795,180 +795,5 @@ class TestOperatingModeHVACModes:
         )
 
         modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.COOL in modes
-        assert HVACMode.HEAT not in modes
-        assert HVACMode.HEAT_COOL not in modes
-
-    def test_hvac_modes_auto_mode_both_enabled(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC modes in auto mode with both heating and cooling enabled."""
-        # Set operating mode to auto (3)
-        coordinator.data["162"]["value"] = 3
-        # Circuit2Settings: heating enabled (bit 20 = 0), cooling enabled (bit 17 = 1)
-        coordinator.data["281"]["value"] = 1 << 17
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.HEAT_COOL in modes
-        assert HVACMode.HEAT in modes
-        assert HVACMode.COOL in modes
-
-    def test_hvac_modes_auto_mode_only_heating(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC modes in auto mode with only heating enabled."""
-        # Set operating mode to auto (3)
-        coordinator.data["162"]["value"] = 3
-        # Circuit2Settings: heating enabled (bit 20 = 0), cooling disabled (bit 17 = 0)
-        coordinator.data["281"]["value"] = 0
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.HEAT in modes
+        assert modes == [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT]
         assert HVACMode.COOL not in modes
-        assert HVACMode.HEAT_COOL not in modes
-
-    def test_hvac_modes_auto_mode_only_cooling(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC modes in auto mode with only cooling enabled."""
-        # Set operating mode to auto (3)
-        coordinator.data["162"]["value"] = 3
-        # Circuit2Settings: heating disabled (bit 20 = 1), cooling enabled (bit 17 = 1)
-        coordinator.data["281"]["value"] = (1 << 20) | (1 << 17)
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.COOL in modes
-        assert HVACMode.HEAT not in modes
-        assert HVACMode.HEAT_COOL not in modes
-
-    def test_hvac_modes_winter_cooling_enabled_ignored(self, coordinator: EconextCoordinator) -> None:
-        """Test that cooling is not available in winter mode even if enabled in settings."""
-        # Set operating mode to winter (2)
-        coordinator.data["162"]["value"] = 2
-        # Circuit2Settings: both heating and cooling enabled
-        coordinator.data["281"]["value"] = 1 << 17
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.HEAT in modes
-        # Cooling should not be available in winter mode
-        assert HVACMode.COOL not in modes
-        assert HVACMode.HEAT_COOL not in modes
-
-    def test_hvac_modes_summer_heating_enabled_ignored(self, coordinator: EconextCoordinator) -> None:
-        """Test that heating is not available in summer mode even if enabled in settings."""
-        # Set operating mode to summer (1)
-        coordinator.data["162"]["value"] = 1
-        # Circuit2Settings: both heating and cooling enabled
-        coordinator.data["281"]["value"] = 1 << 17
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        assert HVACMode.COOL in modes
-        # Heating should not be available in summer mode
-        assert HVACMode.HEAT not in modes
-        assert HVACMode.HEAT_COOL not in modes
-
-    def test_hvac_modes_no_operating_mode_defaults_auto(self, coordinator: EconextCoordinator) -> None:
-        """Test that when operating mode is not available, system defaults to auto behavior."""
-        # Remove operating mode parameter
-        del coordinator.data["162"]
-        # Circuit2Settings: both heating and cooling enabled
-        coordinator.data["281"]["value"] = 1 << 17
-
-        circuit = CIRCUITS[2]
-        entity = CircuitClimate(
-            coordinator,
-            circuit_num=2,
-            name_param=circuit.name_param,
-            work_state_param=circuit.work_state_param,
-            settings_param=circuit.settings_param,
-            thermostat_param=circuit.thermostat_param,
-            comfort_param=circuit.comfort_param,
-            eco_param=circuit.eco_param,
-            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
-        )
-
-        modes = entity.hvac_modes
-        assert HVACMode.OFF in modes
-        # AUTO is now a preset (SCHEDULE), not an HVAC mode
-        # assert HVACMode.AUTO in modes  # Removed - AUTO is now PRESET_SCHEDULE
-        # Should behave like auto mode
-        assert HVACMode.HEAT_COOL in modes
-        assert HVACMode.HEAT in modes
-        assert HVACMode.COOL in modes

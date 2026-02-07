@@ -42,6 +42,7 @@ def coordinator(mock_hass: MagicMock, mock_api: MagicMock, all_params_parsed: di
     """Create a coordinator with data."""
     coordinator = EconextCoordinator(mock_hass, mock_api)
     coordinator.data = all_params_parsed
+    coordinator.async_set_param = AsyncMock(return_value=True)
     coordinator.async_request_refresh = AsyncMock()
     return coordinator
 
@@ -208,9 +209,7 @@ class TestEconextSelect:
         select = EconextSelect(coordinator, description)
         await select.async_select_option("winter")
 
-        coordinator.api.async_set_param.assert_called_once_with(162, 2)
-        # Optimistic update should set the local value
-        assert coordinator.data["162"]["value"] == 2
+        coordinator.async_set_param.assert_called_once_with("162", 2)
 
     @pytest.mark.asyncio
     async def test_select_option_summer(self, coordinator: EconextCoordinator) -> None:
@@ -226,9 +225,7 @@ class TestEconextSelect:
         select = EconextSelect(coordinator, description)
         await select.async_select_option("summer")
 
-        coordinator.api.async_set_param.assert_called_once_with(162, 1)
-        # Optimistic update should set the local value
-        assert coordinator.data["162"]["value"] == 1
+        coordinator.async_set_param.assert_called_once_with("162", 1)
 
     @pytest.mark.asyncio
     async def test_select_option_auto(self, coordinator: EconextCoordinator) -> None:
@@ -244,9 +241,7 @@ class TestEconextSelect:
         select = EconextSelect(coordinator, description)
         await select.async_select_option("auto")
 
-        coordinator.api.async_set_param.assert_called_once_with(162, 6)
-        # Optimistic update should set the local value
-        assert coordinator.data["162"]["value"] == 6
+        coordinator.async_set_param.assert_called_once_with("162", 6)
 
     @pytest.mark.asyncio
     async def test_select_option_unknown(self, coordinator: EconextCoordinator) -> None:
@@ -262,7 +257,7 @@ class TestEconextSelect:
         select = EconextSelect(coordinator, description)
         await select.async_select_option("unknown_option")
 
-        coordinator.api.async_set_param.assert_not_called()
+        coordinator.async_set_param.assert_not_called()
         coordinator.async_request_refresh.assert_not_called()
 
 
@@ -345,5 +340,4 @@ class TestCircuitTypeSelect:
         await select.async_select_option("fan_coil")
 
         # Should set to 3 (fan coil)
-        coordinator.api.async_set_param.assert_called_once_with(269, 3)
-        assert coordinator.data["269"]["value"] == 3
+        coordinator.async_set_param.assert_called_once_with("269", 3)

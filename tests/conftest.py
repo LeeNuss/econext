@@ -37,18 +37,15 @@ def all_params_parsed(all_params_response: dict) -> dict:
 
 @pytest.fixture
 def gateway_api_response(all_params_response: dict) -> dict:
-    """Create a gateway-format API response from the allParams fixture.
+    """Create a gateway-format API response from the fixture.
 
-    Gateway returns: {"timestamp": "...", "parameters": {"Name": {"index": N, "value": V, ...}}}
+    Gateway returns index-keyed: {"timestamp": "...", "parameters": {"0": {"index": 0, "name": "PS", ...}}}
     """
     parameters = {}
     for index_str, param_data in all_params_response.items():
-        name = param_data.get("name", f"param_{index_str}")
-        # Handle duplicate names by appending index
-        if name in parameters:
-            name = f"{name}_{index_str}"
-        parameters[name] = {
+        parameters[index_str] = {
             "index": int(index_str),
+            "name": param_data.get("name", f"param_{index_str}"),
             "value": param_data.get("value"),
             "type": param_data.get("type", 2),
             "unit": param_data.get("unit", 0),

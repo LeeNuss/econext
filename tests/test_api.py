@@ -48,7 +48,6 @@ class TestFetchAllParams:
         gateway_api_response: dict,
     ) -> None:
         """Test successful fetch of all parameters."""
-        # Setup mock response
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.json = AsyncMock(return_value=gateway_api_response)
@@ -83,8 +82,9 @@ class TestFetchAllParams:
         gateway_response = {
             "timestamp": "2026-02-06T12:00:00",
             "parameters": {
-                "TestParam": {
+                "42": {
                     "index": 42,
+                    "name": "TestParam",
                     "value": 100,
                     "type": 2,
                     "unit": 1,
@@ -139,33 +139,6 @@ class TestFetchAllParams:
         with pytest.raises(EconextConnectionError, match="Connection error"):
             await api.async_fetch_all_params()
 
-    @pytest.mark.asyncio
-    async def test_fetch_builds_index_to_name_mapping(
-        self,
-        mock_session: MagicMock,
-    ) -> None:
-        """Test that fetching builds the index-to-name reverse mapping."""
-        gateway_response = {
-            "parameters": {
-                "ParamA": {"index": 10, "value": "test"},
-                "ParamB": {"index": 20, "value": 42},
-            }
-        }
-
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value=gateway_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
-        await api.async_fetch_all_params()
-
-        assert api._index_to_name["10"] == "ParamA"
-        assert api._index_to_name["20"] == "ParamB"
-
 
 class TestSetParam:
     """Test the async_set_param method."""
@@ -173,34 +146,16 @@ class TestSetParam:
     @pytest.mark.asyncio
     async def test_set_param_success(self, mock_session: MagicMock) -> None:
         """Test successful parameter set via POST."""
-        # First, populate the index-to-name mapping
-        fetch_response = AsyncMock()
-        fetch_response.status = 200
-        fetch_response.json = AsyncMock(
-            return_value={
-                "parameters": {
-                    "dhwTarget": {"index": 103, "value": 40},
-                }
-            }
-        )
-        fetch_response.__aenter__ = AsyncMock(return_value=fetch_response)
-        fetch_response.__aexit__ = AsyncMock(return_value=None)
-
         set_response = AsyncMock()
         set_response.status = 200
         set_response.__aenter__ = AsyncMock(return_value=set_response)
         set_response.__aexit__ = AsyncMock(return_value=None)
 
-        mock_session.get = MagicMock(return_value=fetch_response)
         mock_session.post = MagicMock(return_value=set_response)
 
         api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
 
-        # Fetch first to build mapping
-        await api.async_fetch_all_params()
-
-        # Now set a param
-        result = await api.async_set_param(103, 45)
+        result = await api.async_set_param("dhwTarget", 45)
 
         assert result is True
         # Verify POST was called with correct URL and JSON body
@@ -210,19 +165,8 @@ class TestSetParam:
         assert call_args[1]["json"] == {"value": 45}
 
     @pytest.mark.asyncio
-    async def test_set_param_unknown_index(self, mock_session: MagicMock) -> None:
-        """Test setting a parameter with unknown index raises error."""
-        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
-
-        with pytest.raises(EconextApiError, match="Unknown parameter index"):
-            await api.async_set_param(99999, 45)
-
-    @pytest.mark.asyncio
     async def test_set_param_api_error(self, mock_session: MagicMock) -> None:
         """Test API error when setting parameter."""
-        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
-        api._index_to_name = {"103": "dhwTarget"}
-
         mock_response = AsyncMock()
         mock_response.status = 500
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
@@ -230,8 +174,10 @@ class TestSetParam:
 
         mock_session.post = MagicMock(return_value=mock_response)
 
+        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
         with pytest.raises(EconextApiError, match="status 500"):
-            await api.async_set_param(103, 45)
+            await api.async_set_param("dhwTarget", 45)
 
 
 class TestTestConnection:
