@@ -148,7 +148,7 @@ class EconextApi:
 
         # Extract device info from params (same indexes as original)
         uid = params.get("10", {}).get("value", "unknown")
-        name = params.get("374", {}).get("value", "ecoMAX")
+        name = params.get("374", {}).get("value", "ecoMAX360i")
 
         return {
             "uid": uid,

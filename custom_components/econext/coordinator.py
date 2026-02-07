@@ -61,7 +61,7 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
     def get_device_name(self) -> str:
         """Get the device name."""
-        return self.get_param_value(374) or "ecoMAX"
+        return self.get_param_value(374) or "ecoMAX360i"
 
     @property
     def alarms(self) -> list[dict[str, Any]]:
