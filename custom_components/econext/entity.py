@@ -56,9 +56,15 @@ class EconextEntity(CoordinatorEntity[EconextCoordinator]):
             if self._device_id.startswith("circuit_"):
                 circuit_num = self._device_id.split("_")[1]
                 device_info["model"] = f"Circuit {circuit_num}"
+            # Add SW version for heat pump
+            if self._device_id == "heatpump":
+                sw = self.coordinator.get_param_value(1283)
+                if sw:
+                    device_info["sw_version"] = str(sw)
             return device_info
 
         # Main controller device
+        serial = self.coordinator.get_param_value(9)  # FN - factory number
         return DeviceInfo(
             identifiers={(DOMAIN, uid)},
             name=device_name,
@@ -66,6 +72,7 @@ class EconextEntity(CoordinatorEntity[EconextCoordinator]):
             model="ecoMAX360i",
             sw_version=self.coordinator.get_param_value(0),  # PS - software version
             hw_version=self.coordinator.get_param_value(1),  # HV - hardware version
+            serial_number=str(serial) if serial else None,
         )
 
     def _get_sub_device_name(self) -> str:
