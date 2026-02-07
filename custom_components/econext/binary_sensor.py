@@ -1,21 +1,16 @@
 """Binary sensor platform for ecoNEXT integration."""
 
-import logging
-
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    ALARM_BINARY_SENSORS,
-    DOMAIN,
-    EconextBinarySensorEntityDescription,
-)
+from .const import DOMAIN, get_alarm_name
 from .coordinator import EconextCoordinator
 from .entity import EconextEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -26,65 +21,40 @@ async def async_setup_entry(
     """Set up ecoNEXT binary sensor entities from a config entry."""
     coordinator: EconextCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    entities: list[EconextBinarySensor] = []
-
-    # Add alarm binary sensor entities
-    for description in ALARM_BINARY_SENSORS:
-        # Only add if parameter exists in data
-        if coordinator.get_param(description.param_id) is not None:
-            entities.append(EconextBinarySensor(coordinator, description))
-        else:
-            _LOGGER.debug(
-                "Skipping binary sensor %s - parameter %s not found",
-                description.key,
-                description.param_id,
-            )
-
-    async_add_entities(entities)
+    async_add_entities([EconextAlarmActiveBinarySensor(coordinator)])
 
 
-class EconextBinarySensor(EconextEntity, BinarySensorEntity):
-    """Representation of an ecoNEXT binary sensor entity."""
+class EconextAlarmActiveBinarySensor(EconextEntity, BinarySensorEntity):
+    """Binary sensor that indicates if any alarm is currently active."""
 
-    def __init__(
-        self,
-        coordinator: EconextCoordinator,
-        description: EconextBinarySensorEntityDescription,
-        device_id: str | None = None,
-    ) -> None:
-        """Initialize the binary sensor entity."""
-        # Use provided device_id or determine from device_type
-        if device_id is None and description.device_type != "controller":
-            device_id = description.device_type
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_icon = "mdi:alert"
+    _attr_translation_key = "alarm_active"
 
-        super().__init__(coordinator, description.param_id, device_id)
-
-        self._description = description
-        self._attr_translation_key = description.key
-
-        # Apply description attributes
-        if description.device_class:
-            self._attr_device_class = description.device_class
-        if description.entity_category:
-            self._attr_entity_category = description.entity_category
-        if description.icon:
-            self._attr_icon = description.icon
-
-        # Override unique_id to include the key for bitfield sensors
-        # This ensures each bit position gets a unique ID
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the alarm active binary sensor."""
+        # Use a sentinel param_id since this entity reads from alarm data, not parameters
+        super().__init__(coordinator, "_alarms", None)
         uid = coordinator.get_device_uid()
-        if device_id:
-            self._attr_unique_id = f"{uid}_{device_id}_{description.param_id}_{description.key}"
-        else:
-            self._attr_unique_id = f"{uid}_{description.param_id}_{description.key}"
+        self._attr_unique_id = f"{uid}_alarm_active"
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if the binary sensor is on."""
-        value = self._get_param_value()
-        if value is None:
-            return None
+        """Return True if any alarm is currently active (unresolved)."""
+        return len(self.coordinator.active_alarms) > 0
 
-        # Read the specific bit from the bitfield
-        bit_value = (int(value) >> self._description.bit_position) & 1
-        return bit_value == 1
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return active alarm details."""
+        active = self.coordinator.active_alarms
+        return {
+            "active_alarm_count": len(active),
+            "active_alarm_codes": [
+                {"code": a.get("code"), "name": get_alarm_name(a.get("code", 0))}
+                for a in active
+            ],
+        }
+
+    def _is_value_valid(self) -> bool:
+        """Alarm data is always valid if coordinator is updating."""
+        return True

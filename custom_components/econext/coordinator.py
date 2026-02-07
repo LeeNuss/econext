@@ -25,38 +25,31 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
         )
         self.api = api
+        self._alarms: list[dict[str, Any]] = []
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
         try:
-            return await self.api.async_fetch_all_params()
+            params = await self.api.async_fetch_all_params()
         except EconextApiError as err:
             raise UpdateFailed(f"Error fetching data: {err}") from err
 
+        # Fetch alarms (non-fatal - alarms are secondary to parameters)
+        try:
+            self._alarms = await self.api.async_fetch_alarms()
+        except EconextApiError:
+            _LOGGER.debug("Failed to fetch alarms, keeping previous data")
+
+        return params
+
     def get_param(self, param_id: str | int) -> dict[str, Any] | None:
-        """Get a parameter by ID.
-
-        Args:
-            param_id: The parameter ID (string or int).
-
-        Returns:
-            The parameter dict or None if not found.
-
-        """
+        """Get a parameter by ID."""
         if self.data is None:
             return None
         return self.data.get(str(param_id))
 
     def get_param_value(self, param_id: str | int) -> Any:
-        """Get a parameter value by ID.
-
-        Args:
-            param_id: The parameter ID (string or int).
-
-        Returns:
-            The parameter value or None if not found.
-
-        """
+        """Get a parameter value by ID."""
         param = self.get_param(param_id)
         if param is None:
             return None
@@ -70,18 +63,28 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Get the device name."""
         return self.get_param_value(374) or "ecoMAX"
 
+    @property
+    def alarms(self) -> list[dict[str, Any]]:
+        """Get alarm history."""
+        return self._alarms
+
+    @property
+    def active_alarms(self) -> list[dict[str, Any]]:
+        """Get currently active (unresolved) alarms."""
+        return [a for a in self._alarms if a.get("to_date") is None]
+
+    @property
+    def latest_alarm(self) -> dict[str, Any] | None:
+        """Get the most recent alarm."""
+        if not self._alarms:
+            return None
+        return self._alarms[0]
+
     async def async_set_param(self, param_id: str | int, value: Any) -> bool:
         """Set a parameter value on the device with optimistic local update.
 
         Calls the API to set the value, and on success updates the local cache
         immediately for instant UI feedback.
-
-        Args:
-            param_id: The parameter ID (string or int).
-            value: The new value to set.
-
-        Returns:
-            True if successful.
 
         """
         # Convert param_id to int for API call

@@ -19,6 +19,7 @@ from .const import (
     HEATPUMP_SCHEDULE_DIAGNOSTIC_SENSORS,
     HEATPUMP_SENSORS,
     SILENT_MODE_SCHEDULE_DIAGNOSTIC_SENSORS,
+    get_alarm_name,
 )
 from .coordinator import EconextCoordinator
 from .entity import EconextEntity
@@ -77,7 +78,7 @@ async def async_setup_entry(
     """Set up ecoNEXT sensors from a config entry."""
     coordinator: EconextCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    entities: list[EconextSensor] = []
+    entities: list[SensorEntity] = []
 
     # Add controller sensors
     for description in CONTROLLER_SENSORS:
@@ -255,6 +256,9 @@ async def async_setup_entry(
                         param_id_am,
                         param_id_pm,
                     )
+
+    # Add alarm history sensor
+    entities.append(EconextAlarmSensor(coordinator))
 
     async_add_entities(entities)
 
@@ -468,3 +472,57 @@ class EconextActiveScheduleModeSensor(EconextSensor):
                 return "eco"
         except (ValueError, TypeError):
             return None
+
+
+class EconextAlarmSensor(EconextEntity, SensorEntity):
+    """Sensor showing the most recent alarm with history in attributes."""
+
+    _attr_icon = "mdi:alert-circle-outline"
+    _attr_translation_key = "last_alarm"
+
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the alarm sensor."""
+        super().__init__(coordinator, "_alarms", None)
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_last_alarm"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return description of the most recent alarm."""
+        latest = self.coordinator.latest_alarm
+        if latest is None:
+            return "No alarms"
+        return get_alarm_name(latest.get("code", 0))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return alarm details and history."""
+        latest = self.coordinator.latest_alarm
+        active = self.coordinator.active_alarms
+        alarms = self.coordinator.alarms
+
+        attrs: dict = {
+            "active_alarm_count": len(active),
+        }
+
+        if latest:
+            attrs["alarm_code"] = latest.get("code")
+            attrs["from_date"] = latest.get("from_date")
+            attrs["to_date"] = latest.get("to_date")
+
+        # Include recent alarm history (last 10)
+        attrs["alarm_history"] = [
+            {
+                "code": a.get("code"),
+                "name": get_alarm_name(a.get("code", 0)),
+                "from_date": a.get("from_date"),
+                "to_date": a.get("to_date"),
+            }
+            for a in alarms[:10]
+        ]
+
+        return attrs
+
+    def _is_value_valid(self) -> bool:
+        """Alarm data is always valid if coordinator is updating."""
+        return True

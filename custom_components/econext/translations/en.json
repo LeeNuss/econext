@@ -30,11 +30,8 @@
     },
     "entity": {
         "binary_sensor": {
-            "alarm_antifreeze_active": {
-                "name": "Anti-freeze active"
-            },
-            "alarm_water_flow_failure": {
-                "name": "Water flow failure (P01)"
+            "alarm_active": {
+                "name": "Alarm active"
             }
         },
         "climate": {
@@ -50,6 +47,9 @@
             }
         },
         "sensor": {
+            "last_alarm": {
+                "name": "Last alarm"
+            },
             "software_version": {
                 "name": "Software version"
             },
@@ -108,21 +108,6 @@
             },
             "work_state_4": {
                 "name": "Work state 4"
-            },
-            "alarm_bits_1": {
-                "name": "Alarm bits 1"
-            },
-            "alarm_bits_2": {
-                "name": "Alarm bits 2"
-            },
-            "alarm_bits_3": {
-                "name": "Alarm bits 3"
-            },
-            "alarm_bits_4": {
-                "name": "Alarm bits 4"
-            },
-            "alarm_bits_5": {
-                "name": "Alarm bits 5"
             },
             "temperature": {
                 "name": "Temperature"

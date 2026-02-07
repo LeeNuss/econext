@@ -5,7 +5,7 @@ from typing import Any
 
 import aiohttp
 
-from .const import API_ENDPOINT_PARAMETERS
+from .const import API_ENDPOINT_ALARMS, API_ENDPOINT_PARAMETERS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -107,6 +107,31 @@ class EconextApi:
 
         _LOGGER.debug("Fetched %d parameters from gateway", len(params))
         return params
+
+    async def async_fetch_alarms(self) -> list[dict[str, Any]]:
+        """Fetch alarm history from the gateway.
+
+        Returns:
+            List of alarm dicts with keys: index, code, from_date, to_date.
+            to_date is None for active (unresolved) alarms.
+
+        """
+        url = f"{self._base_url}{API_ENDPOINT_ALARMS}"
+        timeout = aiohttp.ClientTimeout(total=10)
+
+        try:
+            async with self._session.get(url, timeout=timeout) as response:
+                if response.status != 200:
+                    raise EconextApiError(f"Alarms API returned status {response.status}")
+
+                data = await response.json()
+
+        except aiohttp.ClientError as err:
+            raise EconextConnectionError(f"Connection error fetching alarms: {err}") from err
+
+        alarms = data.get("alarms", [])
+        _LOGGER.debug("Fetched %d alarms from gateway", len(alarms))
+        return alarms
 
     async def async_set_param(self, param_id: str | int, value: Any) -> bool:
         """Set a parameter value on the device.

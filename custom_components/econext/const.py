@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     PERCENTAGE,
@@ -33,6 +32,7 @@ DEFAULT_PORT = 8000
 
 # API endpoints
 API_ENDPOINT_PARAMETERS = "/api/parameters"
+API_ENDPOINT_ALARMS = "/api/alarms"
 
 # Update interval in seconds
 UPDATE_INTERVAL = 30
@@ -127,6 +127,17 @@ LEGIONELLA_DAY_MAPPING: dict[int, str] = {
 LEGIONELLA_DAY_OPTIONS: list[str] = list(LEGIONELLA_DAY_MAPPING.values())
 LEGIONELLA_DAY_REVERSE: dict[str, int] = {v: k for k, v in LEGIONELLA_DAY_MAPPING.items()}
 
+# Alarm code to description mapping
+ALARM_CODE_NAMES: dict[int, str] = {
+    10: "Antifreeze",
+    148: "Water flow failure",
+}
+
+
+def get_alarm_name(code: int) -> str:
+    """Get human-readable alarm name, falling back to code number."""
+    return ALARM_CODE_NAMES.get(code, f"Alarm code {code} (UNKNOWN)")
+
 
 class DeviceType(StrEnum):
     """Device types in the integration."""
@@ -210,40 +221,6 @@ class EconextButtonEntityDescription:
     device_type: DeviceType = DeviceType.CONTROLLER
     entity_category: EntityCategory | None = None
     icon: str | None = None
-
-
-@dataclass(frozen=True)
-class EconextBinarySensorEntityDescription:
-    """Describes an Econext binary sensor entity."""
-
-    key: str  # Translation key
-    param_id: str  # Parameter ID from API (bitfield parameter)
-    bit_position: int  # Which bit to read from the bitfield
-    device_type: DeviceType = DeviceType.CONTROLLER
-    device_class: BinarySensorDeviceClass | None = None
-    entity_category: EntityCategory | None = None
-    icon: str | None = None
-
-
-# Alarm binary sensors - read bits from alarm bitfield parameters
-ALARM_BINARY_SENSORS: tuple[EconextBinarySensorEntityDescription, ...] = (
-    EconextBinarySensorEntityDescription(
-        key="alarm_antifreeze_active",
-        param_id="1042",  # AlarmBits_1
-        bit_position=6,  # bit 6 = value 64
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:snowflake-alert",
-    ),
-    EconextBinarySensorEntityDescription(
-        key="alarm_water_flow_failure",
-        param_id="1044",  # AlarmBits_3
-        bit_position=16,  # bit 16 = value 65536
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:water-alert",
-    ),
-)
 
 
 # Controller sensors - read only
@@ -365,37 +342,6 @@ CONTROLLER_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         param_id="164",
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:state-machine",
-    ),
-    # Alarm sensors (diagnostic)
-    EconextSensorEntityDescription(
-        key="alarm_bits_1",
-        param_id="1042",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
-    ),
-    EconextSensorEntityDescription(
-        key="alarm_bits_2",
-        param_id="1043",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
-    ),
-    EconextSensorEntityDescription(
-        key="alarm_bits_3",
-        param_id="1044",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
-    ),
-    EconextSensorEntityDescription(
-        key="alarm_bits_4",
-        param_id="1045",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
-    ),
-    EconextSensorEntityDescription(
-        key="alarm_bits_5",
-        param_id="1046",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
     ),
 )
 
