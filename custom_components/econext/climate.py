@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from homeassistant.components.climate import (
-    ATTR_TARGET_TEMP_HIGH,
-    ATTR_TARGET_TEMP_LOW,
     ATTR_TEMPERATURE,
     ClimateEntity,
     ClimateEntityFeature,
@@ -427,13 +425,10 @@ class CircuitClimate(EconextEntity, ClimateEntity):
     @property
     def supported_features(self) -> int:
         """Return the list of supported features."""
-        features = ClimateEntityFeature.PRESET_MODE
-        # In HEAT_COOL mode, support dual setpoints
-        if self.hvac_mode == HVACMode.HEAT_COOL:
-            features |= ClimateEntityFeature.TARGET_TEMPERATURE_RANGE
-        else:
-            features |= ClimateEntityFeature.TARGET_TEMPERATURE
-        return features
+        return (
+            ClimateEntityFeature.PRESET_MODE
+            | ClimateEntityFeature.TARGET_TEMPERATURE
+        )
 
     def __init__(
         self,
@@ -475,59 +470,19 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
     @property
     def hvac_modes(self) -> list[HVACMode]:
-        """Return available HVAC modes based on operating mode and heating/cooling enable settings."""
-        modes = [HVACMode.OFF]
+        """Return available HVAC modes.
 
-        # Get system operating mode (param 162: 1=summer, 2=winter, 3=auto)
-        operating_mode_param = self.coordinator.get_param("162")
-        operating_mode = int(operating_mode_param.get("value", 3)) if operating_mode_param else 3
+        OFF: circuit off
+        AUTO: controller decides heating/cooling based on operating mode
+        HEAT: force heating only
+        COOL: force cooling only (requires cooling_support enabled globally)
+        """
+        modes = [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT]
 
-        # Read settings bitmap
-        settings_param = self.coordinator.get_param(self._settings_param)
-        if not settings_param:
-            # Default based on operating mode
-            if operating_mode == 1:  # Summer
-                modes.append(HVACMode.COOL)
-            else:  # Winter or Auto - default to heat
-                modes.append(HVACMode.HEAT)
-            return modes
-
-        settings_value = int(settings_param.get("value", 0))
-
-        # Check bit 20: heating enable (inverted: 0=on, 1=off)
-        heating_enabled = ((settings_value >> 20) & 1) == 0
-
-        # Check bit 17: cooling enable (0=off, 1=on)
-        cooling_enabled = ((settings_value >> 17) & 1) == 1
-
-        # Operating mode acts as master override
-        if operating_mode == 1:  # Summer mode - only cooling available
-            if cooling_enabled:
-                modes.append(HVACMode.COOL)
-            else:
-                # Cooling not enabled but in summer mode - still offer COOL as only option
-                modes.append(HVACMode.COOL)
-        elif operating_mode == 2:  # Winter mode - only heating available
-            if heating_enabled:
-                modes.append(HVACMode.HEAT)
-            else:
-                # Heating not enabled but in winter mode - still offer HEAT as only option
-                modes.append(HVACMode.HEAT)
-        else:  # Auto mode (3) - respect individual enable bits
-            if heating_enabled and cooling_enabled:
-                # Both enabled - offer all modes
-                modes.append(HVACMode.HEAT_COOL)
-                modes.append(HVACMode.HEAT)
-                modes.append(HVACMode.COOL)
-            elif heating_enabled:
-                # Only heating enabled
-                modes.append(HVACMode.HEAT)
-            elif cooling_enabled:
-                # Only cooling enabled
-                modes.append(HVACMode.COOL)
-            else:
-                # Neither enabled - default to HEAT
-                modes.append(HVACMode.HEAT)
+        # Only offer COOL if cooling_support (param 485) is globally enabled
+        cooling_support_param = self.coordinator.get_param("485")
+        if cooling_support_param and int(cooling_support_param.get("value", 0)):
+            modes.append(HVACMode.COOL)
 
         return modes
 
@@ -543,10 +498,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
     @property
     def target_temperature(self) -> float | None:
-        """Return the target temperature based on current preset.
-
-        Used for HEAT and COOL modes. For HEAT_COOL mode, use target_temperature_low/high instead.
-        """
+        """Return the target temperature based on current preset."""
         preset = self.preset_mode
         if preset == PRESET_SCHEDULE:
             # In schedule mode, return the active preset temperature
@@ -563,40 +515,6 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
         if param:
             temp = param.get("value")
-            if temp is not None:
-                return float(temp)
-        return None
-
-    @property
-    def target_temperature_low(self) -> float | None:
-        """Return the lower target temperature for HEAT_COOL mode.
-
-        This is the heating setpoint - heat when temperature drops below this.
-        """
-        if self.hvac_mode != HVACMode.HEAT_COOL:
-            return None
-
-        # Use eco temp as the lower bound (heating setpoint)
-        eco_param = self.coordinator.get_param(self._eco_param)
-        if eco_param:
-            temp = eco_param.get("value")
-            if temp is not None:
-                return float(temp)
-        return None
-
-    @property
-    def target_temperature_high(self) -> float | None:
-        """Return the higher target temperature for HEAT_COOL mode.
-
-        This is the cooling setpoint - cool when temperature rises above this.
-        """
-        if self.hvac_mode != HVACMode.HEAT_COOL:
-            return None
-
-        # Use comfort temp as the upper bound (cooling setpoint)
-        comfort_param = self.coordinator.get_param(self._comfort_param)
-        if comfort_param:
-            temp = comfort_param.get("value")
             if temp is not None:
                 return float(temp)
         return None
@@ -623,7 +541,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
         # Determine HVAC mode
         if heating_enabled and cooling_enabled:
-            return HVACMode.HEAT_COOL
+            return HVACMode.AUTO
         elif heating_enabled:
             return HVACMode.HEAT
         elif cooling_enabled:
@@ -638,27 +556,33 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         if work_state == CircuitWorkState.OFF:
             return HVACAction.OFF
 
-        # Determine if heating or cooling based on current mode
         hvac_mode = self.hvac_mode
         current = self.current_temperature
         target = self.target_temperature
+        hysteresis = self._get_hysteresis()
 
         if current is not None and target is not None:
-            # Allow for hysteresis (0.5°C tolerance)
             if hvac_mode == HVACMode.COOL:
-                # Cooling mode: cool when current > target
-                if current > target + 0.5:
+                if current > target + hysteresis:
                     return HVACAction.COOLING
             elif hvac_mode == HVACMode.HEAT:
-                # Heating mode: heat when current < target
-                if current < target - 0.5:
+                if current < target - hysteresis:
                     return HVACAction.HEATING
-            elif hvac_mode == HVACMode.HEAT_COOL:
-                # Auto heat/cool: determine action based on temperature
-                if current < target - 0.5:
-                    return HVACAction.HEATING
-                elif current > target + 0.5:
-                    return HVACAction.COOLING
+            elif hvac_mode == HVACMode.AUTO:
+                # Use active_operating_mode (param 161) to determine
+                # whether the controller is in heating or cooling season
+                active_mode_param = self.coordinator.get_param("161")
+                active_mode = (
+                    int(active_mode_param.get("value", 2))
+                    if active_mode_param
+                    else 2
+                )
+                if active_mode == 1:  # Summer -> cooling season
+                    if current > target + hysteresis:
+                        return HVACAction.COOLING
+                else:  # Winter (2) -> heating season
+                    if current < target - hysteresis:
+                        return HVACAction.HEATING
 
         return HVACAction.IDLE
 
@@ -724,6 +648,17 @@ class CircuitClimate(EconextEntity, ClimateEntity):
                 return int(value)
         return 0
 
+    def _get_hysteresis(self) -> float:
+        """Get the hysteresis value for this circuit."""
+        circuit = CIRCUITS.get(self._circuit_num)
+        if circuit:
+            param = self.coordinator.get_param(circuit.hysteresis_param)
+            if param:
+                value = param.get("value")
+                if value is not None:
+                    return float(value)
+        return 0.5
+
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set HVAC mode by updating work state and heating/cooling enable bits."""
         if hvac_mode == HVACMode.OFF:
@@ -732,7 +667,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
             await self.coordinator.async_set_param(self._work_state_param, CircuitWorkState.OFF)
             return
 
-        # For ON modes (HEAT/COOL/HEAT_COOL), update heating/cooling enable bits
+        # For ON modes (HEAT/COOL/AUTO), update heating/cooling enable bits
         settings_param = self.coordinator.get_param(self._settings_param)
         if not settings_param:
             _LOGGER.error("Cannot set HVAC mode - settings parameter not found")
@@ -747,7 +682,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         elif hvac_mode == HVACMode.COOL:
             heating_enabled = False
             cooling_enabled = True
-        elif hvac_mode == HVACMode.HEAT_COOL:
+        elif hvac_mode == HVACMode.AUTO:
             heating_enabled = True
             cooling_enabled = True
         else:
@@ -815,36 +750,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         await self.coordinator.async_set_param(self._work_state_param, work_state)
 
     async def async_set_temperature(self, **kwargs) -> None:
-        """Set target temperature.
-
-        For HEAT/COOL modes: Sets single target temperature based on preset.
-        For HEAT_COOL mode: Sets dual setpoints (low=eco, high=comfort).
-        In SCHEDULE mode: Updates the currently active preset temperature.
-        """
-        # Handle dual setpoints for HEAT_COOL mode
-        if self.hvac_mode == HVACMode.HEAT_COOL:
-            temp_low = kwargs.get(ATTR_TARGET_TEMP_LOW)
-            temp_high = kwargs.get(ATTR_TARGET_TEMP_HIGH)
-
-            if temp_low is not None:
-                _LOGGER.debug(
-                    "Setting Circuit %s ECO temperature to %s°C (heating setpoint)",
-                    self._circuit_num,
-                    temp_low,
-                )
-                await self.coordinator.async_set_param(self._eco_param, float(temp_low))
-
-            if temp_high is not None:
-                _LOGGER.debug(
-                    "Setting Circuit %s COMFORT temperature to %s°C (cooling setpoint)",
-                    self._circuit_num,
-                    temp_high,
-                )
-                await self.coordinator.async_set_param(self._comfort_param, float(temp_high))
-
-            return
-
-        # Handle single setpoint for HEAT/COOL modes
+        """Set target temperature based on current preset."""
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
