@@ -380,11 +380,15 @@ class TestCircuitClimate:
 
         assert entity.hvac_action == HVACAction.OFF
 
-    def test_hvac_action_heating(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC action when actively heating."""
-        coordinator.data["286"]["value"] = CircuitWorkState.COMFORT
-        coordinator.data["327"]["value"] = 18.0  # Current temp
-        coordinator.data["288"]["value"] = 21.0  # Comfort temp (target)
+    def test_hvac_action_heating(self, circuit_2_entity: CircuitClimate) -> None:
+        """Test HVAC action when HP is heating and circuit pump is running."""
+        # Fixture defaults: HPStatusCircPStat1=1 (pump on),
+        # HPStatusHdwHeatStat=0 (no DHW), HPStatusWorkMode=1 (heating)
+        assert circuit_2_entity.hvac_action == HVACAction.HEATING
+
+    def test_hvac_action_idle_pump_off(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC action is IDLE when circuit pump is off."""
+        coordinator.data["1354"]["value"] = 0  # HPStatusCircPStat1 = off
 
         circuit = CIRCUITS[2]
         entity = CircuitClimate(
@@ -399,14 +403,11 @@ class TestCircuitClimate:
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
         )
 
-        # 18.0 < 21.0 - 0.5 = true, so HEATING
-        assert entity.hvac_action == HVACAction.HEATING
+        assert entity.hvac_action == HVACAction.IDLE
 
-    def test_hvac_action_idle(self, coordinator: EconextCoordinator) -> None:
-        """Test HVAC action when at target temperature."""
-        coordinator.data["286"]["value"] = CircuitWorkState.COMFORT
-        coordinator.data["327"]["value"] = 21.0  # Current temp
-        coordinator.data["288"]["value"] = 21.0  # Comfort temp (target)
+    def test_hvac_action_idle_during_dhw(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC action is IDLE when DHW is loading."""
+        coordinator.data["1361"]["value"] = 1  # HPStatusHdwHeatStat = active
 
         circuit = CIRCUITS[2]
         entity = CircuitClimate(
@@ -421,7 +422,44 @@ class TestCircuitClimate:
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
         )
 
-        # 21.0 < 21.0 - 0.5 = false, so IDLE
+        assert entity.hvac_action == HVACAction.IDLE
+
+    def test_hvac_action_cooling(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC action when HP is in cooling mode."""
+        coordinator.data["1350"]["value"] = 2  # HPStatusWorkMode = cooling
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+        )
+
+        assert entity.hvac_action == HVACAction.COOLING
+
+    def test_hvac_action_idle_hp_standby(self, coordinator: EconextCoordinator) -> None:
+        """Test HVAC action is IDLE when HP is in standby."""
+        coordinator.data["1350"]["value"] = 0  # HPStatusWorkMode = standby
+
+        circuit = CIRCUITS[2]
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=2,
+            name_param=circuit.name_param,
+            work_state_param=circuit.work_state_param,
+            settings_param=circuit.settings_param,
+            thermostat_param=circuit.thermostat_param,
+            comfort_param=circuit.comfort_param,
+            eco_param=circuit.eco_param,
+            room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+        )
+
         assert entity.hvac_action == HVACAction.IDLE
 
     @pytest.mark.asyncio
