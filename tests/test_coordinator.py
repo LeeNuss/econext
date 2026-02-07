@@ -203,4 +203,4 @@ class TestDeviceInfo:
         coordinator.data = None
 
         name = coordinator.get_device_name()
-        assert name == "ecoMAX"
+        assert name == "ecoMAX360i"

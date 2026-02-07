@@ -61,10 +61,11 @@ OPERATING_MODE_OPTIONS: list[str] = list(OPERATING_MODE_MAPPING.values())
 # Reverse mapping for setting values
 OPERATING_MODE_REVERSE: dict[str, int] = {v: k for k, v in OPERATING_MODE_MAPPING.items()}
 
-# Current active mode - API parameter 161 (read-only, shows actual mode when in auto)
+# Current active mode - API parameter 495 HeatingOrCooling (read-only)
+# 0 = winter/heating, non-zero (3) = summer/cooling
 ACTIVE_MODE_MAPPING: dict[int, str] = {
-    1: "summer",
-    2: "winter",
+    0: "winter",
+    3: "summer",
 }
 
 ACTIVE_MODE_OPTIONS: list[str] = list(ACTIVE_MODE_MAPPING.values())
@@ -324,7 +325,7 @@ CONTROLLER_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
     # Note: work_state_2 (param 162) is exposed as operating_mode select entity
     EconextSensorEntityDescription(
         key="active_operating_mode",
-        param_id="161",
+        param_id="495",
         device_class=SensorDeviceClass.ENUM,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:sun-snowflake",

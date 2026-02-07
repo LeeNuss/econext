@@ -4,8 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from custom_components.econext.binary_sensor import EconextBinarySensor
-from custom_components.econext.const import ALARM_BINARY_SENSORS
+from custom_components.econext.binary_sensor import EconextAlarmActiveBinarySensor
 from custom_components.econext.coordinator import EconextCoordinator
 
 
@@ -37,84 +36,87 @@ def coordinator(mock_hass: MagicMock, mock_api: MagicMock, all_params_parsed: di
     return coordinator
 
 
-class TestAlarmBinarySensors:
-    """Test alarm binary sensors."""
+class TestAlarmActiveBinarySensor:
+    """Test alarm active binary sensor."""
 
-    @pytest.mark.asyncio
-    async def test_antifreeze_alarm_off(self, coordinator: EconextCoordinator) -> None:
-        """Test anti-freeze alarm when inactive."""
-        coordinator.data["1042"]["value"] = 0  # No alarms
+    def test_no_active_alarms(self, coordinator: EconextCoordinator) -> None:
+        """Test sensor is off when no alarms are active."""
+        coordinator._alarms = []
 
-        description = ALARM_BINARY_SENSORS[0]  # Anti-freeze sensor
-        sensor = EconextBinarySensor(coordinator, description)
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
 
         assert sensor.is_on is False
-        assert sensor.device_class == "problem"
-        assert sensor.translation_key == "alarm_antifreeze_active"
 
-    @pytest.mark.asyncio
-    async def test_antifreeze_alarm_on(self, coordinator: EconextCoordinator) -> None:
-        """Test anti-freeze alarm when active."""
-        coordinator.data["1042"]["value"] = 64  # Bit 6 set
+    def test_active_alarm_present(self, coordinator: EconextCoordinator) -> None:
+        """Test sensor is on when an unresolved alarm exists."""
+        coordinator._alarms = [
+            {"code": 218, "from_date": "2026-01-15 10:00:00", "to_date": None},
+        ]
 
-        description = ALARM_BINARY_SENSORS[0]  # Anti-freeze sensor
-        sensor = EconextBinarySensor(coordinator, description)
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
 
         assert sensor.is_on is True
 
-    @pytest.mark.asyncio
-    async def test_water_flow_alarm_off(self, coordinator: EconextCoordinator) -> None:
-        """Test water flow alarm when inactive."""
-        coordinator.data["1044"]["value"] = 0  # No alarms
+    def test_only_resolved_alarms(self, coordinator: EconextCoordinator) -> None:
+        """Test sensor is off when all alarms are resolved."""
+        coordinator._alarms = [
+            {"code": 218, "from_date": "2026-01-15 10:00:00", "to_date": "2026-01-15 12:00:00"},
+            {"code": 100, "from_date": "2026-01-10 08:00:00", "to_date": "2026-01-10 09:00:00"},
+        ]
 
-        description = ALARM_BINARY_SENSORS[1]  # Water flow sensor
-        sensor = EconextBinarySensor(coordinator, description)
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
 
         assert sensor.is_on is False
-        assert sensor.translation_key == "alarm_water_flow_failure"
 
-    @pytest.mark.asyncio
-    async def test_water_flow_alarm_on(self, coordinator: EconextCoordinator) -> None:
-        """Test water flow alarm when active."""
-        coordinator.data["1044"]["value"] = 65536  # Bit 16 set
+    def test_mixed_active_and_resolved(self, coordinator: EconextCoordinator) -> None:
+        """Test sensor is on when mix of active and resolved alarms."""
+        coordinator._alarms = [
+            {"code": 218, "from_date": "2026-01-15 10:00:00", "to_date": None},
+            {"code": 100, "from_date": "2026-01-10 08:00:00", "to_date": "2026-01-10 09:00:00"},
+        ]
 
-        description = ALARM_BINARY_SENSORS[1]  # Water flow sensor
-        sensor = EconextBinarySensor(coordinator, description)
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
 
         assert sensor.is_on is True
 
-    @pytest.mark.asyncio
-    async def test_multiple_alarms(self, coordinator: EconextCoordinator) -> None:
-        """Test multiple alarms can be active simultaneously."""
-        # Set multiple bits in alarm_bits_1
-        coordinator.data["1042"]["value"] = 64 + 128  # Bits 6 and 7
+    def test_extra_state_attributes_no_alarms(self, coordinator: EconextCoordinator) -> None:
+        """Test extra state attributes when no alarms."""
+        coordinator._alarms = []
 
-        description = ALARM_BINARY_SENSORS[0]  # Anti-freeze sensor (bit 6)
-        sensor = EconextBinarySensor(coordinator, description)
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
+        attrs = sensor.extra_state_attributes
 
-        # Should still detect bit 6
-        assert sensor.is_on is True
+        assert attrs["active_alarm_count"] == 0
+        assert attrs["active_alarm_codes"] == []
 
-    @pytest.mark.asyncio
-    async def test_unique_id(self, coordinator: EconextCoordinator) -> None:
-        """Test binary sensor has unique ID."""
-        description = ALARM_BINARY_SENSORS[0]
-        sensor = EconextBinarySensor(coordinator, description)
+    def test_extra_state_attributes_with_active(self, coordinator: EconextCoordinator) -> None:
+        """Test extra state attributes include active alarm details."""
+        coordinator._alarms = [
+            {"code": 218, "from_date": "2026-01-15 10:00:00", "to_date": None},
+        ]
 
-        # Should include param_id and key to differentiate from other bits
-        assert "1042" in sensor.unique_id
-        assert "alarm_antifreeze_active" in sensor.unique_id
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
+        attrs = sensor.extra_state_attributes
 
-    @pytest.mark.asyncio
-    async def test_availability(self, coordinator: EconextCoordinator) -> None:
-        """Test binary sensor availability."""
-        description = ALARM_BINARY_SENSORS[0]
-        sensor = EconextBinarySensor(coordinator, description)
+        assert attrs["active_alarm_count"] == 1
+        assert len(attrs["active_alarm_codes"]) == 1
+        assert attrs["active_alarm_codes"][0]["code"] == 218
 
-        # Available when parameter exists
-        coordinator.data["1042"] = {"value": 0}
-        assert sensor.available is True
+    def test_unique_id(self, coordinator: EconextCoordinator) -> None:
+        """Test binary sensor has correct unique ID."""
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
 
-        # Unavailable when parameter missing
-        del coordinator.data["1042"]
-        assert sensor.available is False
+        uid = coordinator.get_device_uid()
+        assert sensor.unique_id == f"{uid}_alarm_active"
+
+    def test_device_class(self, coordinator: EconextCoordinator) -> None:
+        """Test binary sensor device class is problem."""
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
+
+        assert sensor.device_class.value == "problem"
+
+    def test_always_available(self, coordinator: EconextCoordinator) -> None:
+        """Test alarm sensor is always valid (reads alarm data, not params)."""
+        sensor = EconextAlarmActiveBinarySensor(coordinator)
+
+        assert sensor._is_value_valid() is True
