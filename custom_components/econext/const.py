@@ -7,6 +7,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfPower,
     UnitOfTemperature,
 )
 
@@ -35,7 +36,7 @@ API_ENDPOINT_PARAMETERS = "/api/parameters"
 API_ENDPOINT_ALARMS = "/api/alarms"
 
 # Update interval in seconds
-UPDATE_INTERVAL = 30
+UPDATE_INTERVAL = 10
 
 # Device info
 MANUFACTURER = "Plum"
@@ -62,10 +63,10 @@ OPERATING_MODE_OPTIONS: list[str] = list(OPERATING_MODE_MAPPING.values())
 OPERATING_MODE_REVERSE: dict[str, int] = {v: k for k, v in OPERATING_MODE_MAPPING.items()}
 
 # Current active mode - API parameter 495 HeatingOrCooling (read-only)
-# 0 = winter/heating, non-zero (3) = summer/cooling
 ACTIVE_MODE_MAPPING: dict[int, str] = {
-    0: "winter",
-    3: "summer",
+    0: "standby",
+    3: "cooling",
+    4: "heating",
 }
 
 ACTIVE_MODE_OPTIONS: list[str] = list(ACTIVE_MODE_MAPPING.values())
@@ -456,7 +457,7 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
     ),
     EconextSensorEntityDescription(
         key="target_temperature",
-        param_id="523",
+        param_id="479",
         device_type=DeviceType.HEATPUMP,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -472,6 +473,88 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         icon="mdi:heat-pump-outline",
         options=HP_STATUS_WORK_MODE_OPTIONS,
         value_map=HP_STATUS_WORK_MODE_MAPPING,
+    ),
+    EconextSensorEntityDescription(
+        key="flow_temperature",
+        param_id="1134",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-water",
+        precision=1,
+    ),
+    EconextSensorEntityDescription(
+        key="return_temperature",
+        param_id="1135",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-water",
+        precision=1,
+    ),
+    EconextSensorEntityDescription(
+        key="electrical_power",
+        param_id="1047",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        icon="mdi:flash",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="heating_power",
+        param_id="1048",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        icon="mdi:fire",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="cooling_power",
+        param_id="1049",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        icon="mdi:snowflake",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="heating_cop",
+        param_id="1050",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gauge",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="heating_cop_average",
+        param_id="1051",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gauge",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="cooling_cop",
+        param_id="1052",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gauge",
+        precision=2,
+    ),
+    EconextSensorEntityDescription(
+        key="cooling_cop_average",
+        param_id="1053",
+        device_type=DeviceType.HEATPUMP,
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:gauge",
+        precision=2,
     ),
 )
 

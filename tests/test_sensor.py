@@ -237,6 +237,61 @@ class TestEnumSensor:
         assert sensor.native_value == "ch"
         assert sensor._attr_options == ["ch", "dhw"]
 
+    def test_active_operating_mode_handles_value_4(self, coordinator: EconextCoordinator) -> None:
+        """Test active_operating_mode enum handles value 4 (heating)."""
+        from custom_components.econext.const import ACTIVE_MODE_MAPPING, ACTIVE_MODE_OPTIONS
+
+        coordinator.data["495"]["value"] = 4
+
+        description = EconextSensorEntityDescription(
+            key="active_operating_mode",
+            param_id="495",
+            device_class=SensorDeviceClass.ENUM,
+            options=ACTIVE_MODE_OPTIONS,
+            value_map=ACTIVE_MODE_MAPPING,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+
+        assert sensor.native_value == "heating"
+        assert "heating" in sensor._attr_options
+
+    def test_active_operating_mode_standby(self, coordinator: EconextCoordinator) -> None:
+        """Test active_operating_mode enum returns standby for value 0."""
+        from custom_components.econext.const import ACTIVE_MODE_MAPPING, ACTIVE_MODE_OPTIONS
+
+        coordinator.data["495"]["value"] = 0
+
+        description = EconextSensorEntityDescription(
+            key="active_operating_mode",
+            param_id="495",
+            device_class=SensorDeviceClass.ENUM,
+            options=ACTIVE_MODE_OPTIONS,
+            value_map=ACTIVE_MODE_MAPPING,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+
+        assert sensor.native_value == "standby"
+
+    def test_active_operating_mode_cooling(self, coordinator: EconextCoordinator) -> None:
+        """Test active_operating_mode enum returns cooling for value 3."""
+        from custom_components.econext.const import ACTIVE_MODE_MAPPING, ACTIVE_MODE_OPTIONS
+
+        coordinator.data["495"]["value"] = 3
+
+        description = EconextSensorEntityDescription(
+            key="active_operating_mode",
+            param_id="495",
+            device_class=SensorDeviceClass.ENUM,
+            options=ACTIVE_MODE_OPTIONS,
+            value_map=ACTIVE_MODE_MAPPING,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+
+        assert sensor.native_value == "cooling"
+
 
 class TestSensorEntityCategory:
     """Test sensor entity categories."""

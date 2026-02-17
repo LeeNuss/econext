@@ -90,6 +90,89 @@ class TestHeatPumpSensors:
         assert sensor.native_unit_of_measurement == "Hz"
         assert sensor.state_class == "measurement"
 
+    def test_flow_temperature_sensor(self, coordinator):
+        """Test heat pump flow temperature sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "flow_temperature")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1134"
+        # From fixture, param 1134 (AxenOutgoingTemp) = 33.8
+        assert sensor.native_value == 33.8
+        assert sensor.device_class == "temperature"
+
+    def test_return_temperature_sensor(self, coordinator):
+        """Test heat pump return temperature sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "return_temperature")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1135"
+        # From fixture, param 1135 (AxenReturnTemp) = 31.2
+        assert sensor.native_value == 31.2
+        assert sensor.device_class == "temperature"
+
+    def test_electrical_power_sensor(self, coordinator):
+        """Test electrical power sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "electrical_power")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1047"
+        # From fixture, param 1047 (ElectricPower) = 0.62
+        assert sensor.native_value == 0.62
+        assert sensor.device_class == "power"
+        assert sensor.native_unit_of_measurement == "kW"
+
+    def test_heating_power_sensor(self, coordinator):
+        """Test heating thermal power sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "heating_power")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1048"
+        # From fixture, param 1048 (HeatingPower) = 0
+        assert sensor.native_value == 0
+        assert sensor.device_class == "power"
+
+    def test_cooling_power_sensor(self, coordinator):
+        """Test cooling thermal power sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "cooling_power")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1049"
+        assert sensor.device_class == "power"
+
+    def test_heating_cop_sensor(self, coordinator):
+        """Test heating COP (instantaneous) sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "heating_cop")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1050"
+        # From fixture, param 1050 (HeatingCopTemporary) = 0
+        assert sensor.native_value == 0
+
+    def test_heating_cop_average_sensor(self, coordinator):
+        """Test heating COP average (SCOP) sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "heating_cop_average")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1051"
+        # From fixture, param 1051 (HeatingCopAverage) = 7.51
+        assert sensor.native_value == 7.51
+
+    def test_cooling_cop_sensor(self, coordinator):
+        """Test cooling COP (instantaneous) sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "cooling_cop")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1052"
+
+    def test_cooling_cop_average_sensor(self, coordinator):
+        """Test cooling COP average sensor."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "cooling_cop_average")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1053"
+        # From fixture, param 1053 (CoolingCopAverage) = 11.34
+        assert sensor.native_value == 11.34
+
 
 class TestHeatPumpNumbers:
     """Test heat pump number definitions."""

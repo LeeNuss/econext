@@ -100,7 +100,8 @@
                 "name": "Active operating mode",
                 "state": {
                     "summer": "Summer",
-                    "winter": "Winter"
+                    "winter": "Winter",
+                    "auto": "Auto"
                 }
             },
             "work_state_3": {
@@ -180,6 +181,33 @@
                     "heating": "Heating",
                     "cooling": "Cooling"
                 }
+            },
+            "flow_temperature": {
+                "name": "Flow temperature"
+            },
+            "return_temperature": {
+                "name": "Return temperature"
+            },
+            "electrical_power": {
+                "name": "Electrical power"
+            },
+            "heating_power": {
+                "name": "Heating thermal power"
+            },
+            "cooling_power": {
+                "name": "Cooling thermal power"
+            },
+            "heating_cop": {
+                "name": "Heating COP"
+            },
+            "heating_cop_average": {
+                "name": "Heating COP average"
+            },
+            "cooling_cop": {
+                "name": "Cooling COP"
+            },
+            "cooling_cop_average": {
+                "name": "Cooling COP average"
             },
             "silent_mode_schedule_sunday_decoded": {
                 "name": "Silent mode schedule Sunday (decoded)"

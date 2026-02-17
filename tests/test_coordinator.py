@@ -39,7 +39,7 @@ class TestCoordinatorInit:
 
         assert coordinator.api == mock_api
         assert coordinator.name == "econext"
-        assert coordinator.update_interval.total_seconds() == 30
+        assert coordinator.update_interval.total_seconds() == 10
 
 
 class TestAsyncUpdateData:
