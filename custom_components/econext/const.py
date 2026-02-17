@@ -36,7 +36,7 @@ API_ENDPOINT_PARAMETERS = "/api/parameters"
 API_ENDPOINT_ALARMS = "/api/alarms"
 
 # Update interval in seconds
-UPDATE_INTERVAL = 30
+UPDATE_INTERVAL = 10
 
 # Device info
 MANUFACTURER = "Plum"
