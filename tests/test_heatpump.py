@@ -80,6 +80,40 @@ class TestHeatPumpSensors:
         assert sensor.native_unit_of_measurement == "%"
         assert sensor.state_class == "measurement"
 
+
+    def test_energy_consumed_total_sensor(self, coordinator):
+        """Test total electrical energy consumed (AXEN_REGISTER_1202_1203, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_consumed_total")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1285"
+        assert sensor.native_value == pytest.approx(396.29)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
+    def test_energy_consumed_heating_sensor(self, coordinator):
+        """Test electrical energy consumed for heating (AXEN_REGISTER_1206_1207, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_consumed_heating")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1287"
+        assert sensor.native_value == pytest.approx(340.42)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
+    def test_energy_consumed_cooling_sensor(self, coordinator):
+        """Test electrical energy consumed for cooling (AXEN_REGISTER_1204_1205, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_consumed_cooling")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1286"
+        assert sensor.native_value == pytest.approx(0.49)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
     def test_compressor_frequency_sensor(self, coordinator):
         """Test compressor frequency sensor."""
         sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "compressor_frequency")

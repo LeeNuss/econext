@@ -8,6 +8,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     PERCENTAGE,
     EntityCategory,
+    UnitOfEnergy,
     UnitOfPower,
     UnitOfTemperature,
 )
@@ -684,6 +685,40 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         native_unit_of_measurement="kPa",
         icon="mdi:gauge-low",
         precision=0,
+    ),
+    # Electrical energy consumed - AXEN 32-bit registers, raw value / 100 = kWh
+    EconextSensorEntityDescription(
+        key="energy_consumed_total",
+        param_id="1285",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:lightning-bolt-circle",
+        precision=2,
+        value_fn=lambda v: v / 100,
+    ),
+    EconextSensorEntityDescription(
+        key="energy_consumed_heating",
+        param_id="1287",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:lightning-bolt",
+        precision=2,
+        value_fn=lambda v: v / 100,
+    ),
+    EconextSensorEntityDescription(
+        key="energy_consumed_cooling",
+        param_id="1286",
+        device_type=DeviceType.HEATPUMP,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        icon="mdi:lightning-bolt",
+        precision=2,
+        value_fn=lambda v: v / 100,
     ),
 )
 
