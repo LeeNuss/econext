@@ -8,7 +8,7 @@ from homeassistant.components.climate import (
     HVACAction,
     HVACMode,
 )
-from homeassistant.components.climate.const import PRESET_COMFORT, PRESET_ECO
+from homeassistant.components.climate.const import PRESET_BOOST, PRESET_COMFORT, PRESET_ECO
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
@@ -148,6 +148,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
     def test_entity_initialization(self, circuit_2_entity: CircuitClimate) -> None:
@@ -179,7 +180,7 @@ class TestCircuitClimate:
         """Test entity has correct preset modes."""
         from custom_components.econext.climate import PRESET_SCHEDULE
 
-        assert circuit_2_entity._attr_preset_modes == [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE]
+        assert circuit_2_entity._attr_preset_modes == [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE, PRESET_BOOST]
 
     def test_temperature_limits(self, circuit_2_entity: CircuitClimate) -> None:
         """Test entity has correct temperature limits."""
@@ -208,6 +209,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.current_temperature is None
@@ -228,6 +230,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_mode == HVACMode.OFF
@@ -250,6 +253,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_mode == HVACMode.HEAT
@@ -272,6 +276,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_mode == HVACMode.HEAT
@@ -298,6 +303,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.preset_mode == PRESET_ECO
@@ -317,6 +323,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.preset_mode == PRESET_COMFORT
@@ -344,6 +351,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         # From fixture, Circuit2ComfortTemp = 21.0
@@ -364,6 +372,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         # From fixture, Circuit2EcoTemp = 17.5
@@ -391,6 +400,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_action == HVACAction.OFF
@@ -416,6 +426,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_action == HVACAction.IDLE
@@ -435,6 +446,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_action == HVACAction.IDLE
@@ -454,6 +466,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_action == HVACAction.COOLING
@@ -473,6 +486,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.hvac_action == HVACAction.IDLE
@@ -550,6 +564,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         await entity.async_set_temperature(**{ATTR_TEMPERATURE: 22.5})
@@ -574,6 +589,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         await entity.async_set_temperature(**{ATTR_TEMPERATURE: 18.5})
@@ -600,6 +616,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         # Should return SCHEDULE preset
@@ -627,6 +644,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         # Should return SCHEDULE preset
@@ -652,6 +670,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.target_temperature == 19.0
@@ -674,6 +693,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         assert entity.target_temperature == 22.0
@@ -699,6 +719,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         await entity.async_set_temperature(**{ATTR_TEMPERATURE: 20.0})
@@ -727,6 +748,7 @@ class TestCircuitClimate:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         await entity.async_set_temperature(**{ATTR_TEMPERATURE: 23.0})
@@ -770,6 +792,7 @@ class TestOperatingModeHVACModes:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         modes = entity.hvac_modes
@@ -790,6 +813,7 @@ class TestOperatingModeHVACModes:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         modes = entity.hvac_modes
@@ -811,6 +835,7 @@ class TestOperatingModeHVACModes:
             comfort_param=circuit.comfort_param,
             eco_param=circuit.eco_param,
             room_temp_setpoint_param=circuit.room_temp_setpoint_param,
+            boost_time_left_param=circuit.boost_time_left_param,
         )
 
         modes = entity.hvac_modes
