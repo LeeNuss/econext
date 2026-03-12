@@ -239,6 +239,27 @@
             "low_pressure": {
                 "name": "Low pressure"
             },
+            "energy_consumed_total": {
+                "name": "Total energy consumed"
+            },
+            "energy_consumed_heating": {
+                "name": "Energy consumed (heating)"
+            },
+            "energy_consumed_cooling": {
+                "name": "Energy consumed (cooling)"
+            },
+            "energy_consumed_water_heating": {
+                "name": "Energy consumed (water heating)"
+            },
+            "energy_produced_heating": {
+                "name": "Energy produced (heating)"
+            },
+            "energy_produced_cooling": {
+                "name": "Energy produced (cooling)"
+            },
+            "energy_produced_water_heating": {
+                "name": "Energy produced (water heating)"
+            },
             "silent_mode_schedule_sunday_decoded": {
                 "name": "Silent mode schedule Sunday (decoded)"
             },
