@@ -114,6 +114,50 @@ class TestHeatPumpSensors:
         assert sensor.device_class == "energy"
         assert sensor.state_class == "total_increasing"
 
+    def test_energy_consumed_water_heating_sensor(self, coordinator):
+        """Test electrical energy consumed for water heating (AXEN_REGISTER_1208_1209, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_consumed_water_heating")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1288"
+        assert sensor.native_value == pytest.approx(0.0)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
+    def test_energy_produced_heating_sensor(self, coordinator):
+        """Test thermal energy produced for heating (AXEN_REGISTER_1212_1213, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_produced_heating")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1290"
+        assert sensor.native_value == pytest.approx(1636.80)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
+    def test_energy_produced_cooling_sensor(self, coordinator):
+        """Test thermal energy produced for cooling (AXEN_REGISTER_1210_1211, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_produced_cooling")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1289"
+        assert sensor.native_value == pytest.approx(1.61)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
+    def test_energy_produced_water_heating_sensor(self, coordinator):
+        """Test thermal energy produced for water heating (AXEN_REGISTER_1214_1215, raw / 100 = kWh)."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "energy_produced_water_heating")
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+
+        assert sensor.unique_id == "2L7SDPN6KQ38CIH2401K01U_heatpump_1291"
+        assert sensor.native_value == pytest.approx(0.0)
+        assert sensor.native_unit_of_measurement == "kWh"
+        assert sensor.device_class == "energy"
+        assert sensor.state_class == "total_increasing"
+
     def test_compressor_frequency_sensor(self, coordinator):
         """Test compressor frequency sensor."""
         sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "compressor_frequency")
