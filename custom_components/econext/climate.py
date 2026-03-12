@@ -11,7 +11,7 @@ from homeassistant.components.climate import (
     HVACAction,
     HVACMode,
 )
-from homeassistant.components.climate.const import PRESET_COMFORT, PRESET_ECO
+from homeassistant.components.climate.const import PRESET_BOOST, PRESET_COMFORT, PRESET_ECO
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -73,6 +73,9 @@ class Circuit:
     max_setpoint_cooling_param: str
     cooling_fixed_temp_param: str
 
+    # Boost
+    boost_time_left_param: str
+
     # Schedule parameters (AM/PM for each day of week)
     schedule_sunday_am: str
     schedule_sunday_pm: str
@@ -116,6 +119,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="903",
         max_setpoint_cooling_param="904",
         cooling_fixed_temp_param="739",
+        boost_time_left_param="1432",
         schedule_sunday_am="247",
         schedule_sunday_pm="248",
         schedule_monday_am="249",
@@ -156,6 +160,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="787",
         max_setpoint_cooling_param="788",
         cooling_fixed_temp_param="789",
+        boost_time_left_param="1433",
         schedule_sunday_am="297",
         schedule_sunday_pm="298",
         schedule_monday_am="299",
@@ -196,6 +201,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="837",
         max_setpoint_cooling_param="838",
         cooling_fixed_temp_param="839",
+        boost_time_left_param="1434",
         schedule_sunday_am="881",
         schedule_sunday_pm="882",
         schedule_monday_am="883",
@@ -236,6 +242,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="905",
         max_setpoint_cooling_param="906",
         cooling_fixed_temp_param="990",
+        boost_time_left_param="1435",
         schedule_sunday_am="955",
         schedule_sunday_pm="956",
         schedule_monday_am="957",
@@ -276,6 +283,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="907",
         max_setpoint_cooling_param="908",
         cooling_fixed_temp_param="1041",
+        boost_time_left_param="1436",
         schedule_sunday_am="1006",
         schedule_sunday_pm="1007",
         schedule_monday_am="1008",
@@ -316,6 +324,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="909",
         max_setpoint_cooling_param="910",
         cooling_fixed_temp_param="784",
+        boost_time_left_param="1437",
         schedule_sunday_am="867",
         schedule_sunday_pm="868",
         schedule_monday_am="869",
@@ -356,6 +365,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="911",
         max_setpoint_cooling_param="912",
         cooling_fixed_temp_param="834",
+        boost_time_left_param="1438",
         schedule_sunday_am="845",
         schedule_sunday_pm="846",
         schedule_monday_am="847",
@@ -400,6 +410,7 @@ async def async_setup_entry(
                     circuit.comfort_param,
                     circuit.eco_param,
                     circuit.room_temp_setpoint_param,
+                    circuit.boost_time_left_param,
                 )
             )
             _LOGGER.debug("Adding climate entity for Circuit %s", circuit_num)
@@ -417,7 +428,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
     """Representation of a heating circuit climate entity."""
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE]
+    _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE, PRESET_BOOST]
     _attr_min_temp = 10.0
     _attr_max_temp = 35.0
     _attr_target_temperature_step = 0.1
@@ -438,6 +449,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         comfort_param: str,
         eco_param: str,
         room_temp_setpoint_param: str,
+        boost_time_left_param: str,
     ) -> None:
         """Initialize the climate entity."""
         # Use work_state_param as primary param for entity base
@@ -451,6 +463,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         self._comfort_param = comfort_param
         self._eco_param = eco_param
         self._room_temp_setpoint_param = room_temp_setpoint_param
+        self._boost_time_left_param = boost_time_left_param
 
         # Get custom circuit name from controller
         name_param_data = coordinator.get_param(name_param)
@@ -585,6 +598,11 @@ class CircuitClimate(EconextEntity, ClimateEntity):
     @property
     def preset_mode(self) -> str | None:
         """Return current preset mode."""
+        # Boost is an independent overlay - check it first
+        boost_param = self.coordinator.get_param(self._boost_time_left_param)
+        if boost_param and int(boost_param.get("value", 0)) > 0:
+            return PRESET_BOOST
+
         work_state = self._get_work_state()
         if work_state == CircuitWorkState.ECO:
             self._last_preset = PRESET_ECO
@@ -713,6 +731,17 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set preset mode."""
+        if preset_mode == PRESET_BOOST:
+            _LOGGER.debug("Setting Circuit %s to BOOST (60 min)", self._circuit_num)
+            await self.coordinator.async_set_param(self._boost_time_left_param, 60)
+            return
+
+        # Cancel any active boost when switching to another preset
+        boost_param = self.coordinator.get_param(self._boost_time_left_param)
+        if boost_param and int(boost_param.get("value", 0)) > 0:
+            _LOGGER.debug("Cancelling boost on Circuit %s", self._circuit_num)
+            await self.coordinator.async_set_param(self._boost_time_left_param, 0)
+
         if preset_mode == PRESET_ECO:
             work_state = CircuitWorkState.ECO
         elif preset_mode == PRESET_COMFORT:

@@ -270,6 +270,7 @@ def _get_circuit_param_id(circuit, sensor_key: str) -> str | None:
         "calc_temp": circuit.calc_temp_param,
         "room_temp_setpoint": circuit.room_temp_setpoint_param,
         "active_preset_mode": circuit.eco_param,  # Uses eco as primary param for unique ID
+        "boost_time_remaining": circuit.boost_time_left_param,
     }
     return mapping.get(sensor_key)
 

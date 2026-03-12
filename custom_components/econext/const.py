@@ -1284,6 +1284,17 @@ CIRCUIT_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         icon="mdi:calendar-clock",
         options=ACTIVE_PRESET_MODE_OPTIONS,
     ),
+    # Boost time remaining
+    EconextSensorEntityDescription(
+        key="boost_time_remaining",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="min",
+        icon="mdi:timer-sand",
+        precision=0,
+    ),
 )
 
 
