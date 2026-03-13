@@ -154,6 +154,14 @@ def get_alarm_name(code: int) -> str:
     return ALARM_CODE_NAMES.get(code, f"Alarm code {code} (UNKNOWN)")
 
 
+def _signed_div10(v: int | float) -> float:
+    """Interpret uint16 as signed int16, then divide by 10."""
+    v = int(v)
+    if v >= 32768:
+        v -= 65536
+    return v / 10
+
+
 class DeviceType(StrEnum):
     """Device types in the integration."""
 
@@ -637,7 +645,7 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer",
         precision=1,
-        value_fn=lambda v: v / 10,
+        value_fn=_signed_div10,
     ),
     EconextSensorEntityDescription(
         key="exv_valve_outlet_temperature",
@@ -648,7 +656,7 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer",
         precision=1,
-        value_fn=lambda v: v / 10,
+        value_fn=_signed_div10,
     ),
     EconextSensorEntityDescription(
         key="eev_position",
