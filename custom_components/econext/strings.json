@@ -28,6 +28,17 @@
             "reconfigure_instead": "Use the reconfigure option to change connection settings"
         }
     },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Virtual Thermostat",
+                "description": "Configure the virtual thermostat temperature source. Select a temperature sensor entity to automatically submit readings to the heat pump controller.",
+                "data": {
+                    "thermostat_temperature_entity": "Temperature sensor entity"
+                }
+            }
+        }
+    },
     "entity": {
         "binary_sensor": {
             "alarm_active": {

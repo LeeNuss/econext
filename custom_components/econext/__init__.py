@@ -10,7 +10,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EconextConnectionError, EconextApi
-from .const import DEFAULT_PORT, DOMAIN, PLATFORMS
+from .const import CONF_THERMOSTAT_ENTITY, DEFAULT_PORT, DOMAIN, PLATFORMS
 from .coordinator import EconextCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     )
 
     # Create coordinator
-    coordinator = EconextCoordinator(hass, api)
+    thermostat_entity = entry.options.get(CONF_THERMOSTAT_ENTITY)
+    coordinator = EconextCoordinator(hass, api, thermostat_entity_id=thermostat_entity)
 
     # Fetch initial data
     try:
@@ -42,6 +43,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # Store coordinator
     entry.runtime_data = coordinator
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator}
+
+    # Listen for options changes
+    entry.async_on_unload(entry.add_update_listener(_async_update_options))
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

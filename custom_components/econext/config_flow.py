@@ -10,7 +10,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .api import EconextConnectionError, EconextApi
-from .const import DEFAULT_PORT, DOMAIN
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
+
+from .const import CONF_THERMOSTAT_ENTITY, DEFAULT_PORT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,5 +116,20 @@ class EconextOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the options."""
-        # For now, redirect to reconfigure since all settings are in data, not options
-        return self.async_abort(reason="reconfigure_instead")
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current = self._config_entry.options
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_THERMOSTAT_ENTITY,
+                        default=current.get(CONF_THERMOSTAT_ENTITY, ""),
+                    ): EntitySelector(
+                        EntitySelectorConfig(domain="sensor"),
+                    ),
+                }
+            ),
+        )

@@ -7,8 +7,10 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+
 from .api import EconextApiError, EconextApi
-from .const import DOMAIN, UPDATE_INTERVAL
+from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +18,12 @@ _LOGGER = logging.getLogger(__name__)
 class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     """Coordinator to manage data updates from econext device."""
 
-    def __init__(self, hass: HomeAssistant, api: EconextApi) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        api: EconextApi,
+        thermostat_entity_id: str | None = None,
+    ) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
@@ -26,6 +33,8 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         )
         self.api = api
         self._alarms: list[dict[str, Any]] = []
+        self._thermostat_entity_id = thermostat_entity_id
+        self.thermostat_status: dict[str, Any] | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
@@ -39,6 +48,15 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             self._alarms = await self.api.async_fetch_alarms()
         except EconextApiError:
             _LOGGER.debug("Failed to fetch alarms, keeping previous data")
+
+        # Submit thermostat temperature if configured
+        await self._async_submit_thermostat_temperature()
+
+        # Fetch thermostat status (non-fatal)
+        try:
+            self.thermostat_status = await self.api.async_get_thermostat_status()
+        except Exception:
+            _LOGGER.debug("Failed to fetch thermostat status")
 
         return params
 
@@ -79,6 +97,30 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         if not self._alarms:
             return None
         return self._alarms[0]
+
+    async def _async_submit_thermostat_temperature(self) -> None:
+        """Read the configured temperature entity and submit to gateway."""
+        if not self._thermostat_entity_id:
+            return
+
+        state = self.hass.states.get(self._thermostat_entity_id)
+        if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+            _LOGGER.debug(
+                "Thermostat source entity %s unavailable", self._thermostat_entity_id
+            )
+            return
+
+        try:
+            temperature = float(state.state)
+        except (ValueError, TypeError):
+            _LOGGER.debug(
+                "Cannot parse temperature from %s: %s",
+                self._thermostat_entity_id,
+                state.state,
+            )
+            return
+
+        await self.api.async_submit_thermostat_temperature(temperature)
 
     async def async_set_param(self, param_id: str | int, value: Any) -> bool:
         """Set a parameter value on the device with optimistic local update.
