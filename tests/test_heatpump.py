@@ -301,6 +301,24 @@ class TestHeatPumpSensors:
         assert sensor.native_value == 7.2
         assert sensor.device_class == "temperature"
 
+    def test_coil_temperature_negative_wrapping(self, coordinator):
+        """Test coil temperature handles uint16 wrapping for negative values.
+
+        The controller stores temperatures as signed int16 / 10 but reports
+        them as uint16. When temperature goes below 0, the unsigned value wraps:
+        e.g. -0.2C -> raw -2 -> uint16 65534 -> must convert back to -0.2.
+        """
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "coil_temperature")
+        # Simulate uint16 wrapped value: -0.2C = -2 signed = 65534 unsigned
+        coordinator.data["1196"]["value"] = 65534
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+        assert sensor.native_value == pytest.approx(-0.2)
+
+        # Also test -3.0C = -30 signed = 65506 unsigned
+        coordinator.data["1196"]["value"] = 65506
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+        assert sensor.native_value == pytest.approx(-3.0)
+
     def test_exv_valve_outlet_temperature_sensor(self, coordinator):
         """Test EXV valve outlet temperature sensor (AXEN_REGISTER_51, raw value / 10)."""
         sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "exv_valve_outlet_temperature")
@@ -310,6 +328,14 @@ class TestHeatPumpSensors:
         # From fixture, param 1198 (AXEN_REGISTER_51) = 310, value_fn /10 = 31.0
         assert sensor.native_value == 31.0
         assert sensor.device_class == "temperature"
+
+    def test_exv_valve_outlet_temperature_negative_wrapping(self, coordinator):
+        """Test EXV outlet temperature handles uint16 wrapping for negative values."""
+        sensor_desc = next(s for s in HEATPUMP_SENSORS if s.key == "exv_valve_outlet_temperature")
+        # Simulate -1.5C = -15 signed = 65521 unsigned
+        coordinator.data["1198"]["value"] = 65521
+        sensor = EconextSensor(coordinator, sensor_desc, device_id="heatpump")
+        assert sensor.native_value == pytest.approx(-1.5)
 
     def test_eev_position_sensor(self, coordinator):
         """Test EEV position sensor (AXEN_REGISTER_70)."""

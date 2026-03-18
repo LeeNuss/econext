@@ -113,7 +113,7 @@ HP_STATUS_WORK_MODE_MAPPING: dict[int, str] = {
     1: "heating",
     2: "hp_status_mode_2",
     3: "cooling",
-    4: "hp_status_mode_4",
+    4: "defrost",
 }
 
 HP_STATUS_WORK_MODE_OPTIONS: list[str] = list(HP_STATUS_WORK_MODE_MAPPING.values())
@@ -152,6 +152,14 @@ ALARM_CODE_NAMES: dict[int, str] = {
 def get_alarm_name(code: int) -> str:
     """Get human-readable alarm name, falling back to code number."""
     return ALARM_CODE_NAMES.get(code, f"Alarm code {code} (UNKNOWN)")
+
+
+def _signed_div10(v: int | float) -> float:
+    """Interpret uint16 as signed int16, then divide by 10."""
+    v = int(v)
+    if v >= 32768:
+        v -= 65536
+    return v / 10
 
 
 class DeviceType(StrEnum):
@@ -637,7 +645,7 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer",
         precision=1,
-        value_fn=lambda v: v / 10,
+        value_fn=_signed_div10,
     ),
     EconextSensorEntityDescription(
         key="exv_valve_outlet_temperature",
@@ -648,7 +656,7 @@ HEATPUMP_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer",
         precision=1,
-        value_fn=lambda v: v / 10,
+        value_fn=_signed_div10,
     ),
     EconextSensorEntityDescription(
         key="eev_position",
@@ -1283,6 +1291,17 @@ CIRCUIT_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:calendar-clock",
         options=ACTIVE_PRESET_MODE_OPTIONS,
+    ),
+    # Boost time remaining
+    EconextSensorEntityDescription(
+        key="boost_time_remaining",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="min",
+        icon="mdi:timer-sand",
+        precision=0,
     ),
 )
 

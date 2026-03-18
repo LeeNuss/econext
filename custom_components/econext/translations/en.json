@@ -181,7 +181,7 @@
                     "heating": "Heating",
                     "hp_status_mode_2": "HP Status Mode 2",
                     "cooling": "Cooling",
-                    "hp_status_mode_4": "HP Status Mode 4"
+                    "defrost": "Defrost"
                 }
             },
             "flow_temperature": {

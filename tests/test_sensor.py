@@ -368,9 +368,9 @@ class TestCircuitSensors:
         """Test circuit sensor definitions are correct."""
         from custom_components.econext.const import CIRCUIT_SENSORS
 
-        assert len(CIRCUIT_SENSORS) == 4
+        assert len(CIRCUIT_SENSORS) == 5
         keys = {s.key for s in CIRCUIT_SENSORS}
-        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint", "active_preset_mode"}
+        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint", "active_preset_mode", "boost_time_remaining"}
 
         # Temperature sensors should have correct attributes
         temp_sensors = [s for s in CIRCUIT_SENSORS if s.device_class == SensorDeviceClass.TEMPERATURE]
