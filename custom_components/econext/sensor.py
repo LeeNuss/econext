@@ -2,7 +2,8 @@
 
 import logging
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
+from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -260,8 +261,8 @@ async def async_setup_entry(
     # Add alarm history sensor
     entities.append(EconextAlarmSensor(coordinator))
 
-    # Virtual thermostat status sensor
-    entities.append(ThermostatStatusSensor(coordinator))
+    # Virtual thermostat temperature sensor
+    entities.append(ThermostatTemperatureSensor(coordinator))
 
     async_add_entities(entities)
 
@@ -542,34 +543,39 @@ class EconextAlarmSensor(EconextEntity, SensorEntity):
         return True
 
 
-class ThermostatStatusSensor(SensorEntity):
-    """Sensor showing virtual thermostat status."""
+class ThermostatTemperatureSensor(SensorEntity):
+    """Sensor showing the virtual thermostat bus temperature."""
 
     _attr_has_entity_name = True
-    _attr_name = "Status"
+    _attr_name = "Bus temperature"
     _attr_icon = "mdi:thermometer-bluetooth"
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
 
     def __init__(self, coordinator: EconextCoordinator) -> None:
-        """Initialize the thermostat status sensor."""
+        """Initialize the thermostat temperature sensor."""
         self._coordinator = coordinator
         uid = coordinator.get_device_uid()
-        self._attr_unique_id = f"{uid}_virtual_thermostat_status"
+        self._attr_unique_id = f"{uid}_virtual_thermostat_temperature"
 
         from .button import _thermostat_device_info
         self._attr_device_info = _thermostat_device_info(coordinator)
 
     @property
-    def native_value(self) -> str | None:
-        """Return the thermostat status."""
+    def available(self) -> bool:
+        """Return True if thermostat status is available."""
+        status = self._coordinator.thermostat_status
+        return status is not None and status.get("enabled", False)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the effective temperature on the bus."""
         status = self._coordinator.thermostat_status
         if status is None:
-            return "unavailable"
-        if status.get("is_stale"):
-            return "stale"
-        temp = status.get("effective_temperature")
-        if temp is not None:
-            return f"{temp:.1f}"
-        return "unknown"
+            return None
+        return status.get("effective_temperature")
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -578,10 +584,7 @@ class ThermostatStatusSensor(SensorEntity):
         if status is None:
             return {}
         return {
-            "temperature": status.get("temperature"),
-            "effective_temperature": status.get("effective_temperature"),
             "is_stale": status.get("is_stale"),
             "age_seconds": status.get("age_seconds"),
-            "max_age_seconds": status.get("max_age_seconds"),
-            "enabled": status.get("enabled"),
+            "source_temperature": status.get("temperature"),
         }
