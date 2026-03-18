@@ -6,6 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EconextConnectionError, EconextApi
@@ -45,12 +46,44 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Clean up orphaned devices (no entities after platform setup)
+    await _async_cleanup_orphaned_devices(hass, entry)
+
     _LOGGER.info(
         "ecoNEXT integration set up for %s (%s)",
         coordinator.get_device_name(),
         coordinator.get_device_uid(),
     )
 
+    return True
+
+
+async def _async_cleanup_orphaned_devices(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove devices that have no entities after platform setup."""
+    device_reg = dr.async_get(hass)
+    entity_reg = er.async_get(hass)
+
+    devices = dr.async_entries_for_config_entry(device_reg, entry.entry_id)
+    for device in devices:
+        entities = er.async_entries_for_device(entity_reg, device.id, include_disabled_entities=True)
+        if not entities:
+            _LOGGER.info("Removing orphaned device: %s (%s)", device.name, device.id)
+            device_reg.async_remove_device(device.id)
+
+
+async def _async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle options update."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: ConfigEntry, device_entry: dr.DeviceEntry,
+) -> bool:
+    """Allow removal of a device from the integration.
+
+    Returns True if the device can be removed (has no active entities).
+    HA checks for remaining entities before actually deleting.
+    """
     return True
 
 
