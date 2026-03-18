@@ -113,7 +113,7 @@ HP_STATUS_WORK_MODE_MAPPING: dict[int, str] = {
     1: "heating",
     2: "hp_status_mode_2",
     3: "cooling",
-    4: "hp_status_mode_4",
+    4: "defrost",
 }
 
 HP_STATUS_WORK_MODE_OPTIONS: list[str] = list(HP_STATUS_WORK_MODE_MAPPING.values())

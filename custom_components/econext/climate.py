@@ -586,7 +586,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         if hdw_param is not None and int(hdw_param.get("value", 0)) > 0:
             return HVACAction.IDLE
 
-        # HP work mode: 0=standby, 1=heating, 2=unknown, 3=cooling, 4=unknown
+        # HP work mode: 0=standby, 1=heating, 2=unknown, 3=cooling, 4=defrost
         hp_mode_param = self.coordinator.get_param("1350")
         hp_mode = int(hp_mode_param.get("value", 0)) if hp_mode_param else 0
         if hp_mode == 3:
