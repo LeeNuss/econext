@@ -78,25 +78,35 @@ class EconextButton(EconextEntity, ButtonEntity):
         await self.coordinator.async_set_param(self._description.param_id, 1)
 
 
+def _thermostat_device_info(coordinator: EconextCoordinator) -> dict:
+    """Build device info for the Virtual Thermostat sub-device."""
+    uid = coordinator.get_device_uid()
+    return {
+        "identifiers": {(DOMAIN, f"{uid}_virtual_thermostat")},
+        "name": "Virtual Thermostat",
+        "manufacturer": "ecoNEXT Gateway",
+        "model": "ecoSTER_40 (virtual)",
+        "via_device": (DOMAIN, uid),
+    }
+
+
 class ThermostatPairButton(ButtonEntity):
     """Button to trigger virtual thermostat pairing on the bus."""
 
-    _attr_name = "Pair Virtual Thermostat"
+    _attr_has_entity_name = True
+    _attr_name = "Pair"
     _attr_icon = "mdi:link-variant-plus"
-    _attr_entity_category = None
 
     def __init__(self, coordinator: EconextCoordinator) -> None:
         """Initialize the pairing button."""
         self._coordinator = coordinator
         uid = coordinator.get_device_uid()
-        self._attr_unique_id = f"{uid}_thermostat_pair"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, uid)},
-        }
+        self._attr_unique_id = f"{uid}_virtual_thermostat_pair"
+        self._attr_device_info = _thermostat_device_info(coordinator)
 
     async def async_press(self) -> None:
         """Request thermostat pairing. User must enter panel pairing mode within 60s."""
         _LOGGER.info("Thermostat pairing requested via HA button")
         success = await self._coordinator.api.async_request_thermostat_pair()
         if not success:
-            _LOGGER.warning("Thermostat pairing request failed or already paired")
+            _LOGGER.warning("Thermostat pairing request failed")
