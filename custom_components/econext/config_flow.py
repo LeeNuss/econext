@@ -108,7 +108,7 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_THERMOSTAT_ENTITY,
                         default=current_options.get(CONF_THERMOSTAT_ENTITY, ""),
                     ): EntitySelector(
-                        EntitySelectorConfig(domain="sensor"),
+                        EntitySelectorConfig(domain="sensor", device_class="temperature"),
                     ),
                 }
             ),
@@ -148,7 +148,7 @@ class EconextOptionsFlow(OptionsFlow):
                         CONF_THERMOSTAT_ENTITY,
                         default=current.get(CONF_THERMOSTAT_ENTITY, ""),
                     ): EntitySelector(
-                        EntitySelectorConfig(domain="sensor"),
+                        EntitySelectorConfig(domain="sensor", device_class="temperature"),
                     ),
                 }
             ),
