@@ -2,7 +2,7 @@
 
 import logging
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
+from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -168,9 +168,6 @@ async def async_setup_entry(
                         description.key,
                         param_id,
                     )
-
-    # Virtual thermostat temperature input
-    entities.append(ThermostatTemperatureNumber(coordinator))
 
     async_add_entities(entities)
 
@@ -386,38 +383,3 @@ class EconextNumber(EconextEntity, NumberEntity):
                 self._description.param_id,
                 api_value,
             )
-
-
-class ThermostatTemperatureNumber(NumberEntity):
-    """Number entity to manually set the virtual thermostat temperature."""
-
-    _attr_has_entity_name = True
-    _attr_name = "Temperature"
-    _attr_icon = "mdi:thermometer"
-    _attr_native_unit_of_measurement = "°C"
-    _attr_device_class = NumberDeviceClass.TEMPERATURE
-    _attr_native_min_value = 0.0
-    _attr_native_max_value = 35.0
-    _attr_native_step = 0.1
-    _attr_mode = NumberMode.BOX
-
-    def __init__(self, coordinator: EconextCoordinator) -> None:
-        """Initialize the thermostat temperature number."""
-        self._coordinator = coordinator
-        uid = coordinator.get_device_uid()
-        self._attr_unique_id = f"{uid}_virtual_thermostat_temp_input"
-
-        from .button import _thermostat_device_info
-        self._attr_device_info = _thermostat_device_info(coordinator)
-
-    @property
-    def native_value(self) -> float | None:
-        """Return the current submitted temperature."""
-        status = self._coordinator.thermostat_status
-        if status is None:
-            return None
-        return status.get("temperature")
-
-    async def async_set_native_value(self, value: float) -> None:
-        """Submit a temperature to the virtual thermostat."""
-        await self._coordinator.api.async_submit_thermostat_temperature(value)

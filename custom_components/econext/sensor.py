@@ -579,11 +579,13 @@ class ThermostatTemperatureSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        """Return extra attributes."""
+        """Return extra attributes including configured source entity."""
         status = self._coordinator.thermostat_status
+        source = self._coordinator._thermostat_entity_id or "not configured"
         if status is None:
-            return {}
+            return {"source_entity": source}
         return {
+            "source_entity": source,
             "is_stale": status.get("is_stale"),
             "age_seconds": status.get("age_seconds"),
             "source_temperature": status.get("temperature"),
