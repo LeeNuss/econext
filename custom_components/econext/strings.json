@@ -11,10 +11,11 @@
             },
             "reconfigure": {
                 "title": "Reconfigure ecoNEXT Gateway",
-                "description": "Update the connection details for your econext-gateway.",
+                "description": "Update connection details and virtual thermostat settings.",
                 "data": {
                     "host": "Host",
-                    "port": "Port"
+                    "port": "Port",
+                    "thermostat_temperature_entity": "Virtual thermostat temperature source"
                 }
             }
         },
