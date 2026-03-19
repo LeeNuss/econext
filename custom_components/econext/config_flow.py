@@ -137,7 +137,9 @@ class EconextOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            # Remove empty strings so clearing the entity selector actually clears it
+            clean = {k: v for k, v in user_input.items() if v}
+            return self.async_create_entry(title="", data=clean)
 
         current = self._config_entry.options
         return self.async_show_form(
