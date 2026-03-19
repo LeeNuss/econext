@@ -142,13 +142,14 @@ class EconextOptionsFlow(OptionsFlow):
             return self.async_create_entry(title="", data=clean)
 
         current = self._config_entry.options
+        current_entity = current.get(CONF_THERMOSTAT_ENTITY)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
                     vol.Optional(
                         CONF_THERMOSTAT_ENTITY,
-                        default=current.get(CONF_THERMOSTAT_ENTITY, ""),
+                        description={"suggested_value": current_entity} if current_entity else None,
                     ): EntitySelector(
                         EntitySelectorConfig(domain="sensor", device_class="temperature"),
                     ),
