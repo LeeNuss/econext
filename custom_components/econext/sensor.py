@@ -3,7 +3,7 @@
 import logging
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -12,6 +12,7 @@ from .climate import CIRCUITS
 from .const import (
     CIRCUIT_SCHEDULE_DIAGNOSTIC_SENSORS,
     CIRCUIT_SENSORS,
+    CONF_THERMOSTAT_ENTITY,
     CONTROLLER_SENSORS,
     DHW_SCHEDULE_DIAGNOSTIC_SENSORS,
     DHW_SENSORS,
@@ -261,8 +262,11 @@ async def async_setup_entry(
     # Add alarm history sensor
     entities.append(EconextAlarmSensor(coordinator))
 
-    # Virtual thermostat temperature sensor
-    entities.append(ThermostatTemperatureSensor(coordinator))
+    # Virtual thermostat sensors (only if thermostat entity is configured)
+    if entry.options.get(CONF_THERMOSTAT_ENTITY):
+        entities.append(ThermostatTemperatureSensor(coordinator))
+        entities.append(ThermostatStateSensor(coordinator))
+        entities.append(ThermostatSourceSensor(coordinator, entry.options[CONF_THERMOSTAT_ENTITY]))
 
     async_add_entities(entities)
 
@@ -544,11 +548,11 @@ class EconextAlarmSensor(EconextEntity, SensorEntity):
 
 
 class ThermostatTemperatureSensor(SensorEntity):
-    """Sensor showing the virtual thermostat bus temperature."""
+    """Sensor showing the temperature reported to the heat pump."""
 
     _attr_has_entity_name = True
-    _attr_name = "Bus temperature"
-    _attr_icon = "mdi:thermometer-bluetooth"
+    _attr_name = "Reported temperature"
+    _attr_icon = "mdi:thermometer-check"
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -560,8 +564,8 @@ class ThermostatTemperatureSensor(SensorEntity):
         uid = coordinator.get_device_uid()
         self._attr_unique_id = f"{uid}_virtual_thermostat_temperature"
 
-        from .button import _thermostat_device_info
-        self._attr_device_info = _thermostat_device_info(coordinator)
+        from .button import thermostat_device_info
+        self._attr_device_info = thermostat_device_info(coordinator)
 
     @property
     def available(self) -> bool:
@@ -577,16 +581,88 @@ class ThermostatTemperatureSensor(SensorEntity):
             return None
         return status.get("effective_temperature")
 
+
+class ThermostatStateSensor(SensorEntity):
+    """Sensor showing the virtual thermostat pairing/connection state."""
+
+    _attr_has_entity_name = True
+    _attr_name = "State"
+    _attr_icon = "mdi:state-machine"
+
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the state sensor."""
+        self._coordinator = coordinator
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_virtual_thermostat_state"
+
+        from .button import thermostat_device_info
+        self._attr_device_info = thermostat_device_info(coordinator)
+
+    @property
+    def native_value(self) -> str:
+        """Return the thermostat state."""
+        status = self._coordinator.thermostat_status
+        if status is None:
+            return "Unavailable"
+
+        pairing_state = status.get("pairing_state")
+        bus_address = status.get("bus_address")
+
+        if pairing_state == "paired" and bus_address:
+            if status.get("is_stale"):
+                return "Stale"
+            return f"Paired (addr {bus_address})"
+        if pairing_state == "pairing_requested":
+            return "Pairing requested"
+        if pairing_state == "beacon_responded":
+            return "Pairing in progress"
+        return "Unpaired"
+
+    @property
+    def icon(self) -> str:
+        """Return icon based on state."""
+        status = self._coordinator.thermostat_status
+        if status and status.get("pairing_state") == "paired":
+            if status.get("is_stale"):
+                return "mdi:alert-circle-outline"
+            return "mdi:check-circle-outline"
+        if status and status.get("pairing_state") in ("pairing_requested", "beacon_responded"):
+            return "mdi:progress-clock"
+        return "mdi:circle-off-outline"
+
     @property
     def extra_state_attributes(self) -> dict:
-        """Return extra attributes including configured source entity."""
+        """Return extra attributes."""
         status = self._coordinator.thermostat_status
-        source = self._coordinator._thermostat_entity_id or "not configured"
         if status is None:
-            return {"source_entity": source}
+            return {}
         return {
-            "source_entity": source,
+            "bus_address": status.get("bus_address"),
+            "pairing_state": status.get("pairing_state"),
             "is_stale": status.get("is_stale"),
             "age_seconds": status.get("age_seconds"),
-            "source_temperature": status.get("temperature"),
         }
+
+
+class ThermostatSourceSensor(SensorEntity):
+    """Sensor showing which temperature entity feeds the virtual thermostat."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Source sensor"
+    _attr_icon = "mdi:link"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: EconextCoordinator, source_entity_id: str) -> None:
+        """Initialize the source sensor."""
+        self._coordinator = coordinator
+        self._source_entity_id = source_entity_id
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_virtual_thermostat_source"
+
+        from .button import thermostat_device_info
+        self._attr_device_info = thermostat_device_info(coordinator)
+
+    @property
+    def native_value(self) -> str:
+        """Return the source entity ID."""
+        return self._source_entity_id
