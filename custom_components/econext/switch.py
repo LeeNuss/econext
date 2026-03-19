@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .climate import CIRCUITS
 from .const import (
     CIRCUIT_SWITCHES,
+    CONF_THERMOSTAT_ENTITY,
     CONTROLLER_SWITCHES,
     DHW_SWITCHES,
     DOMAIN,
@@ -97,6 +98,10 @@ async def async_setup_entry(
                         description.key,
                         param_id,
                     )
+
+    # Thermostat pairing switch
+    if entry.options.get(CONF_THERMOSTAT_ENTITY):
+        entities.append(ThermostatPairSwitch(coordinator))
 
     async_add_entities(entities)
 
@@ -202,3 +207,47 @@ class EconextSwitch(EconextEntity, SwitchEntity):
         else:
             # Standard boolean switch
             await self.coordinator.async_set_param(self._description.param_id, 0)
+
+
+class ThermostatPairSwitch(SwitchEntity):
+    """Switch to control virtual thermostat bus pairing."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Paired"
+
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the pairing switch."""
+        self._coordinator = coordinator
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_virtual_thermostat_pair"
+
+        from .button import thermostat_device_info
+        self._attr_device_info = thermostat_device_info(coordinator)
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if thermostat is paired."""
+        status = self._coordinator.thermostat_status
+        return status is not None and status.get("pairing_state") == "paired"
+
+    @property
+    def icon(self) -> str:
+        """Return icon based on pairing state."""
+        status = self._coordinator.thermostat_status
+        if status and status.get("pairing_state") == "paired":
+            return "mdi:link-variant"
+        if status and status.get("pairing_state") in ("pairing_requested", "beacon_responded"):
+            return "mdi:link-variant-plus"
+        return "mdi:link-variant-off"
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Request thermostat pairing."""
+        _LOGGER.info("Thermostat pairing requested via switch")
+        await self._coordinator.api.async_request_thermostat_pair()
+        # Force immediate status refresh
+        self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turning off is a no-op (unpair not supported, re-pair to change address)."""
+        pass

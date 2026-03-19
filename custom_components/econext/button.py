@@ -49,10 +49,6 @@ async def async_setup_entry(
                     description.param_id,
                 )
 
-    # Add thermostat pairing button only if thermostat is configured
-    if entry.options.get(CONF_THERMOSTAT_ENTITY):
-        entities.append(ThermostatPairButton(coordinator))
-
     async_add_entities(entities)
 
 
@@ -91,35 +87,3 @@ class EconextButton(EconextEntity, ButtonEntity):
         await self.coordinator.async_set_param(self._description.param_id, 1)
 
 
-class ThermostatPairButton(ButtonEntity):
-    """Button to trigger virtual thermostat pairing on the bus."""
-
-    _attr_has_entity_name = True
-    _attr_name = "Pair"
-
-    def __init__(self, coordinator: EconextCoordinator) -> None:
-        """Initialize the pairing button."""
-        self._coordinator = coordinator
-        uid = coordinator.get_device_uid()
-        self._attr_unique_id = f"{uid}_virtual_thermostat_pair"
-        self._attr_device_info = thermostat_device_info(coordinator)
-        self._update_icon()
-
-    def _update_icon(self) -> None:
-        """Update icon based on pairing state."""
-        status = self._coordinator.thermostat_status
-        if status and status.get("pairing_state") == "paired":
-            self._attr_icon = "mdi:link-variant"
-        elif status and status.get("pairing_state") == "pairing_requested":
-            self._attr_icon = "mdi:link-variant-plus"
-        else:
-            self._attr_icon = "mdi:link-variant-off"
-
-    async def async_press(self) -> None:
-        """Request thermostat pairing. User must enter panel pairing mode within 60s."""
-        _LOGGER.info("Thermostat pairing requested via HA button")
-        await self._coordinator.api.async_request_thermostat_pair()
-        # Force immediate status refresh
-        self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
-        self._update_icon()
-        self.async_write_ha_state()
