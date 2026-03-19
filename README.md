@@ -17,6 +17,7 @@ This integration connects to an econext-gateway running on your local network, p
 - Switch entities for enabling/disabling functions
 - Binary sensors for alarm states
 - Button entities for heat pump commands
+- Virtual thermostat emulation (use HA temperature sensors as heat pump input)
 
 ## Requirements
 
@@ -49,6 +50,47 @@ For weekly heating schedule management, install the [econext-schedule-card](http
 1. Open HACS > **Frontend** > three-dot menu > **Custom repositories**
 2. Add `https://github.com/LeeNuss/econext-schedule-card` as type **Dashboard**
 3. Click **Download** and reload your browser
+
+## Virtual Thermostat
+
+The virtual thermostat lets you use any Home Assistant temperature sensor as the room temperature input for your heat pump. This is ideal if you have multiple temperature sensors and want to use a weighted average instead of the reading from a single physical thermostat.
+
+### Prerequisites
+
+Requires [econext-gateway](https://github.com/LeeNuss/econext-gateway) v0.2.0 or above, installed with thermostat support enabled. See the [gateway setup instructions](https://github.com/LeeNuss/econext-gateway#virtual-thermostat) for details.
+
+### Setup
+
+1. **Configure the temperature source:**
+   Go to **Settings** > **Integrations** > **ecoNEXT** > gear icon.
+   Select a temperature sensor entity (e.g. `sensor.weighted_room_temp`) under **Virtual thermostat temperature source**.
+   The integration will submit this reading to the gateway every 10 seconds.
+
+2. **Pair the virtual thermostat:**
+   A new **Virtual Thermostat** device appears under the integration. Press the **Pair** button,
+   then enter **pairing mode** on the panel within 60 seconds.
+
+3. **Assign to a circuit:**
+   On the panel, assign the new thermostat to the desired heating circuit.
+
+### Virtual Thermostat Device
+
+After configuration, the device shows:
+
+| Entity | Description |
+|--------|-------------|
+| **Reported temperature** | The temperature the heat pump sees (with history graph) |
+| **State** | Connection state: "Paired (addr 164)" / "Pairing requested" / "Unpaired" / "Stale" |
+| **Source sensor** | Which HA entity feeds the temperature (diagnostic) |
+| **Pair** | Button to trigger bus pairing (icon changes based on state) |
+
+### Notes
+
+- The virtual thermostat coexists alongside a real ecoSTER thermostat on separate circuits
+- The last submitted temperature is persisted to disk and survives gateway restarts
+- If the source sensor becomes unavailable, the last known temperature is kept
+- To re-pair at a new address, press the Pair button again
+- To disable, clear the temperature source in the integration settings
 
 ## Supported Devices
 
