@@ -98,6 +98,7 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
         # Pre-fill with current values
         current_data = reconfigure_entry.data
         current_options = reconfigure_entry.options
+        current_entity = current_options.get(CONF_THERMOSTAT_ENTITY)
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema(
@@ -106,7 +107,7 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_PORT, default=current_data.get(CONF_PORT, DEFAULT_PORT)): int,
                     vol.Optional(
                         CONF_THERMOSTAT_ENTITY,
-                        default=current_options.get(CONF_THERMOSTAT_ENTITY, ""),
+                        description={"suggested_value": current_entity} if current_entity else None,
                     ): EntitySelector(
                         EntitySelectorConfig(domain="sensor", device_class="temperature"),
                     ),
