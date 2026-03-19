@@ -137,6 +137,51 @@ class EconextApi:
         except aiohttp.ClientError as err:
             raise EconextConnectionError(f"Connection error: {err}") from err
 
+    async def async_submit_thermostat_temperature(self, temperature: float) -> bool:
+        """Submit a room temperature to the virtual thermostat."""
+        url = f"{self._base_url}/api/thermostat/temperature"
+        timeout = aiohttp.ClientTimeout(total=5)
+        try:
+            async with self._session.post(
+                url, json={"temperature": temperature}, timeout=timeout
+            ) as response:
+                if response.status != 200:
+                    _LOGGER.warning("Thermostat temp submit failed: status %d", response.status)
+                    return False
+                return True
+        except aiohttp.ClientError as err:
+            _LOGGER.debug("Thermostat temp submit error: %s", err)
+            return False
+
+    async def async_request_thermostat_pair(self) -> bool:
+        """Request thermostat pairing on the bus."""
+        url = f"{self._base_url}/api/thermostat/pair"
+        timeout = aiohttp.ClientTimeout(total=5)
+        try:
+            async with self._session.post(url, timeout=timeout) as response:
+                if response.status == 409:
+                    _LOGGER.info("Thermostat already paired or pairing not available")
+                    return False
+                if response.status != 200:
+                    _LOGGER.warning("Thermostat pair request failed: status %d", response.status)
+                    return False
+                return True
+        except aiohttp.ClientError as err:
+            _LOGGER.warning("Thermostat pair request error: %s", err)
+            return False
+
+    async def async_get_thermostat_status(self) -> dict[str, Any] | None:
+        """Get virtual thermostat status."""
+        url = f"{self._base_url}/api/thermostat/status"
+        timeout = aiohttp.ClientTimeout(total=5)
+        try:
+            async with self._session.get(url, timeout=timeout) as response:
+                if response.status != 200:
+                    return None
+                return await response.json()
+        except aiohttp.ClientError:
+            return None
+
     async def async_test_connection(self) -> dict[str, Any]:
         """Test the connection and return device info.
 

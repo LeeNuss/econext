@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .climate import CIRCUITS
 from .const import (
     CIRCUIT_SWITCHES,
+    CONF_THERMOSTAT_ENTITY,
     CONTROLLER_SWITCHES,
     DHW_SWITCHES,
     DOMAIN,
@@ -97,6 +98,10 @@ async def async_setup_entry(
                         description.key,
                         param_id,
                     )
+
+    # Thermostat pairing switch
+    if entry.options.get(CONF_THERMOSTAT_ENTITY):
+        entities.append(ThermostatPairSwitch(coordinator))
 
     async_add_entities(entities)
 
@@ -202,3 +207,69 @@ class EconextSwitch(EconextEntity, SwitchEntity):
         else:
             # Standard boolean switch
             await self.coordinator.async_set_param(self._description.param_id, 0)
+
+
+class ThermostatPairSwitch(SwitchEntity):
+    """Switch to trigger virtual thermostat bus pairing.
+
+    ON while actively pairing (waiting for panel), OFF otherwise.
+    The State sensor shows the actual pairing status (paired/unpaired).
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "Pairing"
+    _pairing_active = False
+
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the pairing switch."""
+        self._coordinator = coordinator
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_virtual_thermostat_pair"
+
+        from .button import thermostat_device_info
+        self._attr_device_info = thermostat_device_info(coordinator)
+
+    @property
+    def is_on(self) -> bool:
+        """Return True only while actively pairing."""
+        return self._pairing_active
+
+    @property
+    def icon(self) -> str:
+        """Return icon based on pairing activity."""
+        if self._pairing_active:
+            return "mdi:link-variant-plus"
+        status = self._coordinator.thermostat_status
+        if status and status.get("pairing_state") == "paired":
+            return "mdi:link-variant"
+        return "mdi:link-variant-off"
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Request thermostat pairing and poll until paired or timeout."""
+        import asyncio
+
+        _LOGGER.info("Thermostat pairing requested via switch")
+        await self._coordinator.api.async_request_thermostat_pair()
+        self._pairing_active = True
+        self.async_write_ha_state()
+
+        # Poll status every 3s for up to 90s until paired
+        for _ in range(30):
+            self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
+            status = self._coordinator.thermostat_status
+            if status and status.get("pairing_state") == "paired":
+                _LOGGER.info("Thermostat pairing confirmed")
+                self._pairing_active = False
+                self.async_write_ha_state()
+                await self._coordinator.async_request_refresh()
+                return
+            await asyncio.sleep(3)
+
+        _LOGGER.warning("Thermostat pairing timed out after 90s")
+        self._pairing_active = False
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Cancel pairing wait."""
+        self._pairing_active = False
+        self.async_write_ha_state()

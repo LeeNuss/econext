@@ -10,11 +10,15 @@
                 }
             },
             "reconfigure": {
-                "title": "Reconfigure ecoNEXT Gateway",
-                "description": "Update the connection details for your econext-gateway.",
+                "title": "ecoNEXT Gateway Settings",
+                "description": "Update connection details and virtual thermostat configuration.",
                 "data": {
                     "host": "Host",
-                    "port": "Port"
+                    "port": "Port",
+                    "thermostat_temperature_entity": "Virtual thermostat temperature source"
+                },
+                "data_description": {
+                    "thermostat_temperature_entity": "Select a temperature sensor to enable the virtual thermostat. The reading will be submitted to the heat pump controller every 10 seconds. Leave empty to disable."
                 }
             }
         },
@@ -26,6 +30,20 @@
             "already_configured": "Device is already configured",
             "reconfigure_successful": "Configuration updated successfully",
             "reconfigure_instead": "Use the reconfigure option to change connection settings"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "ecoNEXT Gateway Settings",
+                "description": "Configure the virtual thermostat.",
+                "data": {
+                    "thermostat_temperature_entity": "Virtual thermostat temperature source"
+                },
+                "data_description": {
+                    "thermostat_temperature_entity": "Select a temperature sensor to enable the virtual thermostat. The reading will be submitted to the heat pump controller every 10 seconds. Leave empty to disable."
+                }
+            }
         }
     },
     "entity": {

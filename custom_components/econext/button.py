@@ -7,11 +7,23 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, EconextButtonEntityDescription, HEATPUMP_BUTTONS
+from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, EconextButtonEntityDescription, HEATPUMP_BUTTONS
 from .coordinator import EconextCoordinator
 from .entity import EconextEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def thermostat_device_info(coordinator: EconextCoordinator) -> dict:
+    """Build device info for the Virtual Thermostat sub-device."""
+    uid = coordinator.get_device_uid()
+    return {
+        "identifiers": {(DOMAIN, f"{uid}_virtual_thermostat")},
+        "name": "Virtual Thermostat",
+        "manufacturer": "ecoNEXT Gateway",
+        "model": "ecoSTER (virtual)",
+        "via_device": (DOMAIN, uid),
+    }
 
 
 async def async_setup_entry(
@@ -22,7 +34,7 @@ async def async_setup_entry(
     """Set up ecoNEXT button entities from a config entry."""
     coordinator: EconextCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    entities: list[EconextButton] = []
+    entities: list[ButtonEntity] = []
 
     # Add heat pump button entities if heat pump device should be created
     heatpump_param = coordinator.get_param("1133")
@@ -73,3 +85,5 @@ class EconextButton(EconextEntity, ButtonEntity):
             self._description.param_id,
         )
         await self.coordinator.async_set_param(self._description.param_id, 1)
+
+

@@ -10,7 +10,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EconextConnectionError, EconextApi
-from .const import DEFAULT_PORT, DOMAIN, PLATFORMS
+from .const import CONF_THERMOSTAT_ENTITY, DEFAULT_PORT, DOMAIN, PLATFORMS
 from .coordinator import EconextCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     )
 
     # Create coordinator
-    coordinator = EconextCoordinator(hass, api)
+    thermostat_entity = entry.options.get(CONF_THERMOSTAT_ENTITY)
+    coordinator = EconextCoordinator(hass, api, thermostat_entity_id=thermostat_entity)
 
     # Fetch initial data
     try:
@@ -42,6 +43,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # Store coordinator
     entry.runtime_data = coordinator
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator}
+
+    # Listen for options changes
+    entry.async_on_unload(entry.add_update_listener(_async_update_options))
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -62,6 +66,8 @@ async def _async_cleanup_orphaned_devices(hass: HomeAssistant, entry: ConfigEntr
     """Remove devices that have no entities after platform setup."""
     device_reg = dr.async_get(hass)
     entity_reg = er.async_get(hass)
+    coordinator: EconextCoordinator = entry.runtime_data
+    uid = coordinator.get_device_uid()
 
     devices = dr.async_entries_for_config_entry(device_reg, entry.entry_id)
     for device in devices:
@@ -69,6 +75,14 @@ async def _async_cleanup_orphaned_devices(hass: HomeAssistant, entry: ConfigEntr
         if not entities:
             _LOGGER.info("Removing orphaned device: %s (%s)", device.name, device.id)
             device_reg.async_remove_device(device.id)
+            continue
+
+        # Remove virtual thermostat device if thermostat is not configured
+        if not entry.options.get(CONF_THERMOSTAT_ENTITY):
+            vt_identifier = (DOMAIN, f"{uid}_virtual_thermostat")
+            if vt_identifier in device.identifiers:
+                _LOGGER.info("Removing virtual thermostat device (thermostat not configured)")
+                device_reg.async_remove_device(device.id)
 
 
 async def _async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:

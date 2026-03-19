@@ -10,7 +10,9 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .api import EconextConnectionError, EconextApi
-from .const import DEFAULT_PORT, DOMAIN
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
+
+from .const import CONF_THERMOSTAT_ENTITY, DEFAULT_PORT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,6 +69,9 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
         reconfigure_entry = self._get_reconfigure_entry()
 
         if user_input is not None:
+            # Split into data (connection) and options (thermostat)
+            thermostat_entity = user_input.pop(CONF_THERMOSTAT_ENTITY, None)
+
             try:
                 await self._async_validate_input(user_input)
             except EconextConnectionError:
@@ -75,6 +80,16 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
+                # Save thermostat entity in options
+                new_options = dict(reconfigure_entry.options)
+                if thermostat_entity:
+                    new_options[CONF_THERMOSTAT_ENTITY] = thermostat_entity
+                elif CONF_THERMOSTAT_ENTITY in new_options:
+                    del new_options[CONF_THERMOSTAT_ENTITY]
+                self.hass.config_entries.async_update_entry(
+                    reconfigure_entry, options=new_options,
+                )
+
                 return self.async_update_reload_and_abort(
                     reconfigure_entry,
                     data_updates=user_input,
@@ -82,12 +97,20 @@ class EconextConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Pre-fill with current values
         current_data = reconfigure_entry.data
+        current_options = reconfigure_entry.options
+        current_entity = current_options.get(CONF_THERMOSTAT_ENTITY)
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_HOST, default=current_data.get(CONF_HOST, "")): str,
                     vol.Optional(CONF_PORT, default=current_data.get(CONF_PORT, DEFAULT_PORT)): int,
+                    vol.Optional(
+                        CONF_THERMOSTAT_ENTITY,
+                        description={"suggested_value": current_entity} if current_entity else None,
+                    ): EntitySelector(
+                        EntitySelectorConfig(domain="sensor", device_class="temperature"),
+                    ),
                 }
             ),
             errors=errors,
@@ -114,5 +137,23 @@ class EconextOptionsFlow(OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the options."""
-        # For now, redirect to reconfigure since all settings are in data, not options
-        return self.async_abort(reason="reconfigure_instead")
+        if user_input is not None:
+            # Remove empty strings so clearing the entity selector actually clears it
+            clean = {k: v for k, v in user_input.items() if v}
+            return self.async_create_entry(title="", data=clean)
+
+        current = self._config_entry.options
+        current_entity = current.get(CONF_THERMOSTAT_ENTITY)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_THERMOSTAT_ENTITY,
+                        description={"suggested_value": current_entity} if current_entity else None,
+                    ): EntitySelector(
+                        EntitySelectorConfig(domain="sensor", device_class="temperature"),
+                    ),
+                }
+            ),
+        )

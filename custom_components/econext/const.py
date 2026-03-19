@@ -29,6 +29,7 @@ PLATFORMS: list[str] = [
 # Configuration keys
 CONF_HOST = "host"
 CONF_PORT = "port"
+CONF_THERMOSTAT_ENTITY = "thermostat_temperature_entity"
 
 # Default values
 DEFAULT_PORT = 8000

@@ -10,11 +10,15 @@
                 }
             },
             "reconfigure": {
-                "title": "Reconfigure ecoNEXT Gateway",
-                "description": "Update the connection details for your econext-gateway.",
+                "title": "ecoNEXT Gateway Settings",
+                "description": "Update connection details and virtual thermostat configuration.",
                 "data": {
                     "host": "Host",
-                    "port": "Port"
+                    "port": "Port",
+                    "thermostat_temperature_entity": "Virtual thermostat temperature source"
+                },
+                "data_description": {
+                    "thermostat_temperature_entity": "Select a temperature sensor to enable the virtual thermostat. The reading will be submitted to the heat pump controller every 10 seconds. Leave empty to disable."
                 }
             }
         },
@@ -26,6 +30,20 @@
             "already_configured": "Device is already configured",
             "reconfigure_successful": "Configuration updated successfully",
             "reconfigure_instead": "Use the reconfigure option to change connection settings"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "ecoNEXT Gateway Settings",
+                "description": "Configure the virtual thermostat.",
+                "data": {
+                    "thermostat_temperature_entity": "Virtual thermostat temperature source"
+                },
+                "data_description": {
+                    "thermostat_temperature_entity": "Select a temperature sensor to enable the virtual thermostat. The reading will be submitted to the heat pump controller every 10 seconds. Leave empty to disable."
+                }
+            }
         }
     },
     "entity": {
@@ -75,7 +93,8 @@
                 "name": "Flap valve state",
                 "state": {
                     "ch": "Central Heating",
-                    "dhw": "Domestic Hot Water"
+                    "dhw": "Domestic Hot Water",
+                    "unknown": "Unknown"
                 }
             },
             "wifi_ssid": {
@@ -101,7 +120,8 @@
                 "state": {
                     "summer": "Summer",
                     "winter": "Winter",
-                    "auto": "Auto"
+                    "auto": "Auto",
+                    "unknown": "Unknown"
                 }
             },
             "work_state_3": {
@@ -132,7 +152,8 @@
                 "name": "Active preset mode",
                 "state": {
                     "eco": "Eco",
-                    "comfort": "Comfort"
+                    "comfort": "Comfort",
+                    "unknown": "Unknown"
                 }
             },
             "hdw_schedule_sunday_decoded": {
@@ -179,9 +200,8 @@
                 "state": {
                     "standby": "Standby",
                     "heating": "Heating",
-                    "hp_status_mode_2": "HP Status Mode 2",
                     "cooling": "Cooling",
-                    "defrost": "Defrost"
+                    "unknown": "Unknown"
                 }
             },
             "flow_temperature": {
@@ -240,27 +260,6 @@
             },
             "low_pressure": {
                 "name": "Low pressure"
-            },
-            "energy_consumed_total": {
-                "name": "Total energy consumed"
-            },
-            "energy_consumed_heating": {
-                "name": "Energy consumed (heating)"
-            },
-            "energy_consumed_cooling": {
-                "name": "Energy consumed (cooling)"
-            },
-            "energy_consumed_water_heating": {
-                "name": "Energy consumed (water heating)"
-            },
-            "energy_produced_heating": {
-                "name": "Energy produced (heating)"
-            },
-            "energy_produced_cooling": {
-                "name": "Energy produced (cooling)"
-            },
-            "energy_produced_water_heating": {
-                "name": "Energy produced (water heating)"
             },
             "silent_mode_schedule_sunday_decoded": {
                 "name": "Silent mode schedule Sunday (decoded)"
