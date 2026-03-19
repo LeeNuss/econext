@@ -210,10 +210,15 @@ class EconextSwitch(EconextEntity, SwitchEntity):
 
 
 class ThermostatPairSwitch(SwitchEntity):
-    """Switch to control virtual thermostat bus pairing."""
+    """Switch to trigger virtual thermostat bus pairing.
+
+    ON while actively pairing (waiting for panel), OFF otherwise.
+    The State sensor shows the actual pairing status (paired/unpaired).
+    """
 
     _attr_has_entity_name = True
-    _attr_name = "Paired"
+    _attr_name = "Pairing"
+    _pairing_active = False
 
     def __init__(self, coordinator: EconextCoordinator) -> None:
         """Initialize the pairing switch."""
@@ -226,40 +231,45 @@ class ThermostatPairSwitch(SwitchEntity):
 
     @property
     def is_on(self) -> bool:
-        """Return True if thermostat is paired."""
-        status = self._coordinator.thermostat_status
-        return status is not None and status.get("pairing_state") == "paired"
+        """Return True only while actively pairing."""
+        return self._pairing_active
 
     @property
     def icon(self) -> str:
-        """Return icon based on pairing state."""
+        """Return icon based on pairing activity."""
+        if self._pairing_active:
+            return "mdi:link-variant-plus"
         status = self._coordinator.thermostat_status
         if status and status.get("pairing_state") == "paired":
             return "mdi:link-variant"
-        if status and status.get("pairing_state") in ("pairing_requested", "beacon_responded"):
-            return "mdi:link-variant-plus"
         return "mdi:link-variant-off"
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Request thermostat pairing and poll status rapidly until paired."""
+        """Request thermostat pairing and poll until paired or timeout."""
         import asyncio
 
         _LOGGER.info("Thermostat pairing requested via switch")
         await self._coordinator.api.async_request_thermostat_pair()
+        self._pairing_active = True
+        self.async_write_ha_state()
 
         # Poll status every 3s for up to 90s until paired
         for _ in range(30):
             self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
-            self.async_write_ha_state()
-            if self.is_on:
+            status = self._coordinator.thermostat_status
+            if status and status.get("pairing_state") == "paired":
                 _LOGGER.info("Thermostat pairing confirmed")
-                # Trigger a full coordinator refresh so all entities update
+                self._pairing_active = False
+                self.async_write_ha_state()
                 await self._coordinator.async_request_refresh()
                 return
             await asyncio.sleep(3)
 
         _LOGGER.warning("Thermostat pairing timed out after 90s")
+        self._pairing_active = False
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turning off is a no-op (unpair not supported, re-pair to change address)."""
-        pass
+        """Cancel pairing wait."""
+        self._pairing_active = False
+        self.async_write_ha_state()
