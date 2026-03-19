@@ -664,5 +664,13 @@ class ThermostatSourceSensor(SensorEntity):
 
     @property
     def native_value(self) -> str:
-        """Return the source entity ID."""
+        """Return the friendly name of the source entity."""
+        state = self._coordinator.hass.states.get(self._source_entity_id)
+        if state and state.attributes.get("friendly_name"):
+            return state.attributes["friendly_name"]
         return self._source_entity_id
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return the entity ID as an attribute."""
+        return {"entity_id": self._source_entity_id}

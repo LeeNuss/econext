@@ -241,12 +241,24 @@ class ThermostatPairSwitch(SwitchEntity):
         return "mdi:link-variant-off"
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Request thermostat pairing."""
+        """Request thermostat pairing and poll status rapidly until paired."""
+        import asyncio
+
         _LOGGER.info("Thermostat pairing requested via switch")
         await self._coordinator.api.async_request_thermostat_pair()
-        # Force immediate status refresh
-        self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
-        self.async_write_ha_state()
+
+        # Poll status every 3s for up to 90s until paired
+        for _ in range(30):
+            self._coordinator.thermostat_status = await self._coordinator.api.async_get_thermostat_status()
+            self.async_write_ha_state()
+            if self.is_on:
+                _LOGGER.info("Thermostat pairing confirmed")
+                # Trigger a full coordinator refresh so all entities update
+                await self._coordinator.async_request_refresh()
+                return
+            await asyncio.sleep(3)
+
+        _LOGGER.warning("Thermostat pairing timed out after 90s")
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turning off is a no-op (unpair not supported, re-pair to change address)."""
