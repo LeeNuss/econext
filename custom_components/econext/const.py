@@ -145,7 +145,9 @@ LEGIONELLA_DAY_REVERSE: dict[str, int] = {v: k for k, v in LEGIONELLA_DAY_MAPPIN
 
 # Alarm code to description mapping
 ALARM_CODE_NAMES: dict[int, str] = {
+    8: "Circuit 2 temperature sensor error",
     10: "Antifreeze",
+    20: "No communication with heat pump module",
     148: "Water flow failure",
 }
 
