@@ -57,7 +57,7 @@ The virtual thermostat lets you use any Home Assistant temperature sensor as the
 
 ### Prerequisites
 
-Requires [econext-gateway](https://github.com/LeeNuss/econext-gateway) v0.2.0 or above, installed with thermostat support enabled. See the [gateway setup instructions](https://github.com/LeeNuss/econext-gateway#virtual-thermostat) for details.
+Requires [econext-gateway](https://github.com/LeeNuss/econext-gateway) v0.2.0 or above. Thermostat support is enabled by default in the gateway from v0.2.0 onwards — no extra install flag needed. See the [gateway setup instructions](https://github.com/LeeNuss/econext-gateway#virtual-thermostat) for details.
 
 ### Setup
 
@@ -67,22 +67,30 @@ Requires [econext-gateway](https://github.com/LeeNuss/econext-gateway) v0.2.0 or
    The integration will submit this reading to the gateway every 10 seconds.
 
 2. **Pair the virtual thermostat:**
-   A new **Virtual Thermostat** device appears under the integration. Press the **Pair** button,
-   then enter **pairing mode** on the panel within 60 seconds.
+   A new **Virtual Thermostat** device appears under the integration. Press the **Pair** button in HA — this opens a 60-second pairing window on the gateway.
 
-3. **Assign to a circuit:**
-   On the panel, assign the new thermostat to the desired heating circuit.
+3. **Run the panel pairing wizard:**
+   Within those 60 seconds, on the Grant Aerona Smart Controller:
+
+   - From the main menu, tap the **current temperature** of the circuit you want this thermostat assigned to.
+   - On the screen that opens, tap the **thermostat-with-plus** icon in the bottom-left corner — the pairing wizard starts.
+
+   (Alternative path: **System settings -> Circuit settings -> [target circuit] -> Thermostat**, confirming overwrite if a thermostat is already paired.)
+
+   Tap `>` on the panel to accept once the wizard detects the thermostat.
+
+   The **State** entity in HA will move from "Pairing requested" to "Paired (addr NNN)" once the panel assigns an address.
 
 ### Virtual Thermostat Device
 
 After configuration, the device shows:
 
-| Entity | Description |
-|--------|-------------|
-| **Reported temperature** | The temperature the heat pump sees (with history graph) |
-| **State** | Connection state: "Paired (addr 164)" / "Pairing requested" / "Unpaired" / "Stale" |
-| **Source sensor** | Which HA entity feeds the temperature (diagnostic) |
-| **Pair** | Button to trigger bus pairing (icon changes based on state) |
+| Entity                   | Description                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Reported temperature** | The temperature the heat pump sees (with history graph)                                                                                                                                                                                                                                               |
+| **State**                | Connection state. Possible values: `Unpaired` (not yet paired), `Pairing requested` (60s pairing window open), `Paired (addr NNN)` (live and serving the panel), `Stale` (paired but no temperature updates received within the last 5 minutes — gateway has fallen back to a fixed value on the bus) |
+| **Source sensor**        | Which HA entity feeds the temperature (diagnostic)                                                                                                                                                                                                                                                    |
+| **Pair**                 | Button to trigger bus pairing (icon changes based on state)                                                                                                                                                                                                                                           |
 
 ### Notes
 
@@ -91,6 +99,12 @@ After configuration, the device shows:
 - If the source sensor becomes unavailable, the last known temperature is kept
 - To re-pair at a new address, press the Pair button again
 - To disable, clear the temperature source in the integration settings
+
+### Troubleshooting
+
+- **State stuck on "Pairing requested"** — the panel was not in pairing mode within the 60s window. Re-press the Pair button after putting the panel into pairing mode.
+- **State shows "Stale"** — the configured source sensor stopped publishing updates. Check the source entity in HA; the gateway falls back to a fixed bus temperature (19 C by default) until updates resume.
+- **No Virtual Thermostat device appears** — verify the gateway is reachable and `GET http://<gateway>:8000/api/thermostat/status` returns `"enabled": true`. If `enabled` is false, the gateway was installed before thermostat support was on by default — re-run the gateway installer or set `ECONEXT_THERMOSTAT_ENABLED=true` and restart it.
 
 ## Supported Devices
 
