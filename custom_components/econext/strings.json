@@ -124,6 +124,14 @@
                     "unknown": "Unknown"
                 }
             },
+            "current_season": {
+                "name": "Current season",
+                "state": {
+                    "summer": "Summer",
+                    "winter": "Winter",
+                    "unknown": "Unknown"
+                }
+            },
             "work_state_3": {
                 "name": "Work state 3"
             },

@@ -51,10 +51,11 @@ class TestOperatingModeConstants:
     """Test operating mode constants are correctly defined."""
 
     def test_operating_mode_mapping(self) -> None:
-        """Test operating mode mapping has correct values."""
+        """Test operating mode mapping covers all four bitmap readback values."""
         assert OPERATING_MODE_MAPPING == {
             1: "summer",
             2: "winter",
+            5: "auto",
             6: "auto",
         }
 
@@ -69,11 +70,6 @@ class TestOperatingModeConstants:
             "winter": 2,
             "auto": 6,
         }
-
-    def test_reverse_mapping_matches_forward(self) -> None:
-        """Test reverse mapping is consistent with forward mapping."""
-        for raw_value, option in OPERATING_MODE_MAPPING.items():
-            assert OPERATING_MODE_REVERSE[option] == raw_value
 
 
 class TestControllerSelectsDefinition:
@@ -150,8 +146,23 @@ class TestEconextSelect:
         select = EconextSelect(coordinator, description)
         assert select.current_option == "summer"
 
-    def test_select_current_option_auto(self, coordinator: EconextCoordinator) -> None:
-        """Test select returns correct current option for auto mode."""
+    def test_select_current_option_auto_summer(self, coordinator: EconextCoordinator) -> None:
+        """Auto mode resolved to summer (raw 5) decodes to 'auto'."""
+        coordinator.data["162"] = {"id": 162, "value": 5}
+
+        description = EconextSelectEntityDescription(
+            key="operating_mode",
+            param_id="162",
+            options=OPERATING_MODE_OPTIONS,
+            value_map=OPERATING_MODE_MAPPING,
+            reverse_map=OPERATING_MODE_REVERSE,
+        )
+
+        select = EconextSelect(coordinator, description)
+        assert select.current_option == "auto"
+
+    def test_select_current_option_auto_winter(self, coordinator: EconextCoordinator) -> None:
+        """Auto mode resolved to winter (raw 6) decodes to 'auto'."""
         coordinator.data["162"] = {"id": 162, "value": 6}
 
         description = EconextSelectEntityDescription(

@@ -52,18 +52,45 @@ FLAP_VALVE_STATE_MAPPING: dict[int, str] = {
 
 FLAP_VALVE_STATE_OPTIONS: list[str] = ["ch", "dhw"]
 
-# Operating mode - API parameter 162
+# Operating mode - API parameter 162 (workState2)
+# This parameter is a 3-bit packed bitmap, not a flat enum:
+#   bit 0 = currently summer    bit 1 = currently winter    bit 2 = auto mode
+# So the four valid readback values are:
+#   1 = manual summer, 2 = manual winter,
+#   5 = auto resolved to summer, 6 = auto resolved to winter.
+# Writes use 1/2/6; the controller decides between 5 and 6 once auto is engaged.
 OPERATING_MODE_MAPPING: dict[int, str] = {
     1: "summer",
     2: "winter",
+    5: "auto",
     6: "auto",
 }
 
-OPERATING_MODE_OPTIONS: list[str] = list(OPERATING_MODE_MAPPING.values())
+OPERATING_MODE_OPTIONS: list[str] = ["summer", "winter", "auto"]
 
 
-# Reverse mapping for setting values
-OPERATING_MODE_REVERSE: dict[str, int] = {v: k for k, v in OPERATING_MODE_MAPPING.items()}
+# Reverse mapping for setting values - 5 and 6 both decode to "auto" but we
+# always write 6 to engage auto mode.
+OPERATING_MODE_REVERSE: dict[str, int] = {
+    "summer": 1,
+    "winter": 2,
+    "auto": 6,
+}
+
+# Current season - decoded from bits 0/1 of API parameter 162 (workState2).
+# Always populated regardless of HP run state, unlike HeatingOrCooling (495)
+# which drops to "standby" when the HP isn't actively running.
+CURRENT_SEASON_OPTIONS: list[str] = ["summer", "winter"]
+
+
+def decode_current_season(raw: float | int) -> str | None:
+    """Decode the season bits of workState2. Bit 0 = summer, bit 1 = winter."""
+    value = int(raw)
+    if value & 0x1:
+        return "summer"
+    if value & 0x2:
+        return "winter"
+    return None
 
 # Current active mode - API parameter 495 HeatingOrCooling (read-only)
 ACTIVE_MODE_MAPPING: dict[int, str] = {
@@ -190,7 +217,7 @@ class EconextSensorEntityDescription:
     precision: int | None = None
     options: list[str] | None = None  # For enum sensors
     value_map: dict[int, str] | None = None  # Map raw values to enum strings
-    value_fn: Callable[[float | int], float] | None = None  # Transform raw value
+    value_fn: Callable[[float | int], float | str | None] | None = None  # Transform raw value
     param_id_am: str | None = None  # For schedule diagnostic sensors - AM param
     param_id_pm: str | None = None  # For schedule diagnostic sensors - PM param
 
@@ -357,6 +384,16 @@ CONTROLLER_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         icon="mdi:sun-snowflake",
         options=ACTIVE_MODE_OPTIONS,
         value_map=ACTIVE_MODE_MAPPING,
+    ),
+    # Decoded from workState2 (param 162); reflects the controller's current
+    # season disposition even when the heat pump is idle - what the panel icon shows.
+    EconextSensorEntityDescription(
+        key="current_season",
+        param_id="162",
+        device_class=SensorDeviceClass.ENUM,
+        icon="mdi:sun-snowflake-variant",
+        options=CURRENT_SEASON_OPTIONS,
+        value_fn=decode_current_season,
     ),
     EconextSensorEntityDescription(
         key="work_state_3",

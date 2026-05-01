@@ -310,6 +310,104 @@ class TestEnumSensor:
         assert sensor.native_value == "unknown"
         assert "unknown" in sensor._attr_options
 
+    def test_current_season_summer_manual(self, coordinator: EconextCoordinator) -> None:
+        """current_season decodes raw 1 (manual summer) to 'summer'."""
+        from custom_components.econext.const import CURRENT_SEASON_OPTIONS, decode_current_season
+
+        coordinator.data["162"] = {"id": 162, "value": 1}
+
+        description = EconextSensorEntityDescription(
+            key="current_season",
+            param_id="162",
+            device_class=SensorDeviceClass.ENUM,
+            options=CURRENT_SEASON_OPTIONS,
+            value_fn=decode_current_season,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+        assert sensor.native_value == "summer"
+        assert sensor._attr_options == ["summer", "winter", "unknown"]
+
+    def test_current_season_winter_manual(self, coordinator: EconextCoordinator) -> None:
+        """current_season decodes raw 2 (manual winter) to 'winter'."""
+        from custom_components.econext.const import CURRENT_SEASON_OPTIONS, decode_current_season
+
+        coordinator.data["162"] = {"id": 162, "value": 2}
+
+        description = EconextSensorEntityDescription(
+            key="current_season",
+            param_id="162",
+            device_class=SensorDeviceClass.ENUM,
+            options=CURRENT_SEASON_OPTIONS,
+            value_fn=decode_current_season,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+        assert sensor.native_value == "winter"
+
+    def test_current_season_summer_auto(self, coordinator: EconextCoordinator) -> None:
+        """current_season decodes raw 5 (auto resolved to summer) to 'summer'."""
+        from custom_components.econext.const import CURRENT_SEASON_OPTIONS, decode_current_season
+
+        coordinator.data["162"] = {"id": 162, "value": 5}
+
+        description = EconextSensorEntityDescription(
+            key="current_season",
+            param_id="162",
+            device_class=SensorDeviceClass.ENUM,
+            options=CURRENT_SEASON_OPTIONS,
+            value_fn=decode_current_season,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+        assert sensor.native_value == "summer"
+
+    def test_current_season_winter_auto(self, coordinator: EconextCoordinator) -> None:
+        """current_season decodes raw 6 (auto resolved to winter) to 'winter'."""
+        from custom_components.econext.const import CURRENT_SEASON_OPTIONS, decode_current_season
+
+        coordinator.data["162"] = {"id": 162, "value": 6}
+
+        description = EconextSensorEntityDescription(
+            key="current_season",
+            param_id="162",
+            device_class=SensorDeviceClass.ENUM,
+            options=CURRENT_SEASON_OPTIONS,
+            value_fn=decode_current_season,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+        assert sensor.native_value == "winter"
+
+    def test_current_season_neither_bit_set(self, coordinator: EconextCoordinator) -> None:
+        """current_season returns None when neither season bit is set."""
+        from custom_components.econext.const import CURRENT_SEASON_OPTIONS, decode_current_season
+
+        coordinator.data["162"] = {"id": 162, "value": 0}
+
+        description = EconextSensorEntityDescription(
+            key="current_season",
+            param_id="162",
+            device_class=SensorDeviceClass.ENUM,
+            options=CURRENT_SEASON_OPTIONS,
+            value_fn=decode_current_season,
+        )
+
+        sensor = EconextSensor(coordinator, description)
+        assert sensor.native_value is None
+
+    def test_decode_current_season_helper(self) -> None:
+        """decode_current_season covers all four valid bitmap values."""
+        from custom_components.econext.const import decode_current_season
+
+        assert decode_current_season(1) == "summer"
+        assert decode_current_season(2) == "winter"
+        assert decode_current_season(5) == "summer"
+        assert decode_current_season(6) == "winter"
+        assert decode_current_season(0) is None
+        # Bit 0 wins if both season bits are somehow set
+        assert decode_current_season(3) == "summer"
+
     def test_enum_sensor_unmapped_value_logs_warning(self, coordinator: EconextCoordinator, caplog: pytest.LogCaptureFixture) -> None:
         """Test enum sensor logs a warning with the raw value for unmapped values."""
         from custom_components.econext.const import ACTIVE_MODE_MAPPING, ACTIVE_MODE_OPTIONS
