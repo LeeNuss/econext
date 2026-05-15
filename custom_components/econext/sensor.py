@@ -608,25 +608,40 @@ class ThermostatStateSensor(SensorEntity):
 
     @property
     def native_value(self) -> str:
-        """Return the thermostat state."""
+        """Return the thermostat state.
+
+        Backup-active wins over source-failure: if the gateway is currently
+        serving a wired-thermostat reading, that's the operationally
+        relevant state ('the heat pump is fine'). The source failure is
+        still surfaced via source_state in extra_state_attributes.
+        """
+        status = self._coordinator.thermostat_status
+        if status is not None:
+            pairing_state = status.get("pairing_state")
+            bus_address = status.get("bus_address")
+            effective_source = status.get("effective_source") or "primary"
+
+            if (
+                pairing_state == "paired"
+                and bus_address
+                and effective_source.startswith("backup:")
+            ):
+                backup_addr = effective_source.split(":", 1)[1]
+                return f"Paired (backup: addr {backup_addr})"
+
         source_label = self._SOURCE_STATE_LABELS.get(
             self._coordinator.thermostat_source_state
         )
         if source_label is not None:
             return source_label
 
-        status = self._coordinator.thermostat_status
         if status is None:
             return "Unavailable"
 
         pairing_state = status.get("pairing_state")
         bus_address = status.get("bus_address")
-        effective_source = status.get("effective_source") or "primary"
 
         if pairing_state == "paired" and bus_address:
-            if effective_source.startswith("backup:"):
-                backup_addr = effective_source.split(":", 1)[1]
-                return f"Paired (backup: addr {backup_addr})"
             if status.get("is_stale"):
                 return "Stale"
             return f"Paired (addr {bus_address})"
@@ -639,13 +654,14 @@ class ThermostatStateSensor(SensorEntity):
     @property
     def icon(self) -> str:
         """Return icon based on state."""
-        if self._coordinator.thermostat_source_state != "ok":
-            return "mdi:link-variant-off"
         status = self._coordinator.thermostat_status
         if status and status.get("pairing_state") == "paired":
             effective_source = status.get("effective_source") or "primary"
             if effective_source.startswith("backup:"):
                 return "mdi:backup-restore"
+        if self._coordinator.thermostat_source_state != "ok":
+            return "mdi:link-variant-off"
+        if status and status.get("pairing_state") == "paired":
             if status.get("is_stale"):
                 return "mdi:alert-circle-outline"
             return "mdi:check-circle-outline"
