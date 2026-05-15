@@ -35,6 +35,7 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._alarms: list[dict[str, Any]] = []
         self._thermostat_entity_id = thermostat_entity_id
         self.thermostat_status: dict[str, Any] | None = None
+        self.thermostat_source_state: str = "ok"
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
@@ -98,29 +99,51 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             return None
         return self._alarms[0]
 
+    def _classify_source(self, state) -> tuple[str, Any]:
+        """Classify the source entity state. Returns (status, raw_value)."""
+        if state is None:
+            return "missing", None
+        if state.state == STATE_UNAVAILABLE:
+            return "unavailable", state.state
+        if state.state == STATE_UNKNOWN:
+            return "unknown", state.state
+        try:
+            float(state.state)
+        except (ValueError, TypeError):
+            return "unparseable", state.state
+        return "ok", state.state
+
+    def _update_source_state(self, new_state: str, raw: Any) -> None:
+        """Log transitions of the source-entity status and remember the new one."""
+        if new_state == self.thermostat_source_state:
+            return
+        if new_state == "ok":
+            _LOGGER.info(
+                "Thermostat source %s recovered (was %s)",
+                self._thermostat_entity_id,
+                self.thermostat_source_state,
+            )
+        else:
+            _LOGGER.warning(
+                "Thermostat source %s is %s (raw=%r); skipping push",
+                self._thermostat_entity_id,
+                new_state,
+                raw,
+            )
+        self.thermostat_source_state = new_state
+
     async def _async_submit_thermostat_temperature(self) -> None:
         """Read the configured temperature entity and submit to gateway."""
         if not self._thermostat_entity_id:
             return
 
         state = self.hass.states.get(self._thermostat_entity_id)
-        if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
-            _LOGGER.debug(
-                "Thermostat source entity %s unavailable", self._thermostat_entity_id
-            )
+        new_state, raw = self._classify_source(state)
+        self._update_source_state(new_state, raw)
+        if new_state != "ok":
             return
 
-        try:
-            temperature = float(state.state)
-        except (ValueError, TypeError):
-            _LOGGER.debug(
-                "Cannot parse temperature from %s: %s",
-                self._thermostat_entity_id,
-                state.state,
-            )
-            return
-
-        await self.api.async_submit_thermostat_temperature(temperature)
+        await self.api.async_submit_thermostat_temperature(float(state.state))
 
     async def async_set_param(self, param_id: str | int, value: Any) -> bool:
         """Set a parameter value on the device with optimistic local update.

@@ -1,6 +1,7 @@
 """Sensor platform for ecoNEXT integration."""
 
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.const import EntityCategory, UnitOfTemperature
@@ -598,17 +599,34 @@ class ThermostatStateSensor(SensorEntity):
         from .button import thermostat_device_info
         self._attr_device_info = thermostat_device_info(coordinator)
 
+    _SOURCE_STATE_LABELS = {
+        "missing": "Source missing",
+        "unavailable": "Source unavailable",
+        "unknown": "Source unknown",
+        "unparseable": "Source unparseable",
+    }
+
     @property
     def native_value(self) -> str:
         """Return the thermostat state."""
+        source_label = self._SOURCE_STATE_LABELS.get(
+            self._coordinator.thermostat_source_state
+        )
+        if source_label is not None:
+            return source_label
+
         status = self._coordinator.thermostat_status
         if status is None:
             return "Unavailable"
 
         pairing_state = status.get("pairing_state")
         bus_address = status.get("bus_address")
+        effective_source = status.get("effective_source") or "primary"
 
         if pairing_state == "paired" and bus_address:
+            if effective_source.startswith("backup:"):
+                backup_addr = effective_source.split(":", 1)[1]
+                return f"Paired (backup: addr {backup_addr})"
             if status.get("is_stale"):
                 return "Stale"
             return f"Paired (addr {bus_address})"
@@ -621,8 +639,13 @@ class ThermostatStateSensor(SensorEntity):
     @property
     def icon(self) -> str:
         """Return icon based on state."""
+        if self._coordinator.thermostat_source_state != "ok":
+            return "mdi:link-variant-off"
         status = self._coordinator.thermostat_status
         if status and status.get("pairing_state") == "paired":
+            effective_source = status.get("effective_source") or "primary"
+            if effective_source.startswith("backup:"):
+                return "mdi:backup-restore"
             if status.get("is_stale"):
                 return "mdi:alert-circle-outline"
             return "mdi:check-circle-outline"
@@ -633,15 +656,22 @@ class ThermostatStateSensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         """Return extra attributes."""
-        status = self._coordinator.thermostat_status
-        if status is None:
-            return {}
-        return {
-            "bus_address": status.get("bus_address"),
-            "pairing_state": status.get("pairing_state"),
-            "is_stale": status.get("is_stale"),
-            "age_seconds": status.get("age_seconds"),
+        attrs: dict[str, Any] = {
+            "source_state": self._coordinator.thermostat_source_state,
         }
+        status = self._coordinator.thermostat_status
+        if status is not None:
+            attrs.update(
+                {
+                    "bus_address": status.get("bus_address"),
+                    "pairing_state": status.get("pairing_state"),
+                    "is_stale": status.get("is_stale"),
+                    "age_seconds": status.get("age_seconds"),
+                    "effective_source": status.get("effective_source"),
+                    "effective_temperature": status.get("effective_temperature"),
+                }
+            )
+        return attrs
 
 
 class ThermostatSourceSensor(SensorEntity):
