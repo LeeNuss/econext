@@ -723,6 +723,13 @@
                     "sunday": "Sunday"
                 }
             },
+            "regulation_method": {
+                "name": "Regulation method",
+                "state": {
+                    "weather": "Weather",
+                    "fixed": "Fixed"
+                }
+            },
             "circuit_type": {
                 "name": "Circuit type",
                 "state": {
