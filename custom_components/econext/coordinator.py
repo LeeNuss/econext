@@ -64,6 +64,10 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # Parameter count when the platforms created their entities; see
         # _check_late_parameters.
         self._entities_param_count: int | None = None
+        # Device registry id of the main controller device. Set by
+        # async_setup_entry before the platforms load, so sub-devices can
+        # reference it via `via_device_id`.
+        self.main_device_id: str | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
