@@ -861,3 +861,41 @@ class TestScheduleDiagnosticSensor:
 
         sensor = EconextScheduleDiagnosticSensor(coordinator, description)
         assert sensor.native_value == "00:00-12:00, 12:00-24:00"
+
+
+class TestSubDeviceViaDevice:
+    """Test how sub-devices link to the main controller device."""
+
+    def _dhw_sensor(self, coordinator: EconextCoordinator) -> EconextSensor:
+        description = EconextSensorEntityDescription(
+            key="test_dhw_sensor",
+            param_id="68",
+            device_type=DeviceType.DHW,
+        )
+        return EconextSensor(coordinator, description, device_id="dhw")
+
+    def test_uses_via_device_id_when_main_device_registered(self, coordinator: EconextCoordinator) -> None:
+        """Sub-devices reference the main device by registry id, not the deprecated via_device."""
+        coordinator.main_device_id = "main-device-registry-id"
+
+        device_info = self._dhw_sensor(coordinator).device_info
+
+        assert device_info["via_device_id"] == "main-device-registry-id"
+        assert "via_device" not in device_info
+
+    def test_falls_back_to_via_device_without_main_device_id(self, coordinator: EconextCoordinator) -> None:
+        """Without a registered main device id, the identifier-based via_device is used."""
+        device_info = self._dhw_sensor(coordinator).device_info
+
+        assert device_info["via_device"] == ("econext", "2L7SDPN6KQ38CIH2401K01U")
+        assert "via_device_id" not in device_info
+
+    def test_falls_back_to_via_device_on_older_home_assistant(self, coordinator: EconextCoordinator) -> None:
+        """On HA versions without DeviceInfo['via_device_id'], keep using via_device."""
+        coordinator.main_device_id = "main-device-registry-id"
+
+        with patch("custom_components.econext.entity._HAS_VIA_DEVICE_ID", False):
+            device_info = self._dhw_sensor(coordinator).device_info
+
+        assert device_info["via_device"] == ("econext", "2L7SDPN6KQ38CIH2401K01U")
+        assert "via_device_id" not in device_info

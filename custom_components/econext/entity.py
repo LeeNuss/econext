@@ -6,6 +6,17 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import EconextCoordinator
 
+# HA 2026.8 added DeviceInfo["via_device_id"] and 2026.9 deprecated "via_device"
+# (removal in 2027.8). Fall back to the old key on HA versions that predate it.
+_HAS_VIA_DEVICE_ID = "via_device_id" in DeviceInfo.__annotations__
+
+
+def via_device_info(coordinator: EconextCoordinator) -> dict:
+    """Return the device-info key linking a sub-device to the main controller."""
+    if _HAS_VIA_DEVICE_ID and coordinator.main_device_id:
+        return {"via_device_id": coordinator.main_device_id}
+    return {"via_device": (DOMAIN, coordinator.get_device_uid())}
+
 
 class EconextEntity(CoordinatorEntity[EconextCoordinator]):
     """Base entity for ecoNEXT."""
@@ -50,7 +61,7 @@ class EconextEntity(CoordinatorEntity[EconextCoordinator]):
                 identifiers={(DOMAIN, f"{uid}_{self._device_id}")},
                 name=self._get_sub_device_name(),
                 manufacturer=MANUFACTURER,
-                via_device=(DOMAIN, uid),
+                **via_device_info(self.coordinator),
             )
             # Add model for circuits
             if self._device_id.startswith("circuit_"):

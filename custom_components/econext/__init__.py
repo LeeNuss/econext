@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_COOLING_CIRCUIT,
     DEFAULT_PORT,
     DOMAIN,
+    MANUFACTURER,
     PLATFORMS,
 )
 from .cooling.driver import CoolingDriver
@@ -91,6 +92,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # Rename legacy param-id-based heating_curve unique_ids before platforms
     # re-create entities under the new stable form.
     async_migrate_heating_curve_unique_ids(hass, entry)
+
+    # Register the main controller device before the platforms load, so
+    # sub-devices can link to it by device id regardless of entity order.
+    main_device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, coordinator.get_device_uid())},
+        name=coordinator.get_device_name(),
+        manufacturer=MANUFACTURER,
+        model="ecoMAX360i",
+    )
+    coordinator.main_device_id = main_device.id
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, EconextButtonEntityDescription, HEATPUMP_BUTTONS
 from .coordinator import EconextCoordinator
-from .entity import EconextEntity
+from .entity import EconextEntity, via_device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def thermostat_device_info(coordinator: EconextCoordinator) -> dict:
         "name": "Virtual Thermostat",
         "manufacturer": "ecoNEXT Gateway",
         "model": "ecoSTER (virtual)",
-        "via_device": (DOMAIN, uid),
+        **via_device_info(coordinator),
     }
 
 

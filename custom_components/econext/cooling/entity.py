@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN, MANUFACTURER
 from ..coordinator import EconextCoordinator
+from ..entity import via_device_info
 from .const import CYCLE_STATES
 from .models import working_target
 
@@ -88,7 +89,7 @@ class CoolingControllerEntity(CoordinatorEntity[EconextCoordinator]):
             # entity_ids don't collide while both run in parallel.
             name="Cooling (econext)",
             manufacturer=MANUFACTURER,
-            via_device=(DOMAIN, uid),
+            **via_device_info(self.coordinator),
         )
 
 

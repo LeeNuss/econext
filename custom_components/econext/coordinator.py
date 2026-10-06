@@ -40,6 +40,10 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # Optional cooling controller; attached by async_setup_entry when the
         # cooling feature is enabled. Ticked at the end of each refresh.
         self.cooling_driver: Any | None = None
+        # Device registry id of the main controller device. Set by
+        # async_setup_entry before the platforms load, so sub-devices can
+        # reference it via `via_device_id`.
+        self.main_device_id: str | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
