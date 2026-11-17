@@ -3,7 +3,7 @@
     "name": "ecoNEXT",
     "codeowners": ["@LeeNuss"],
     "config_flow": true,
-    "dependencies": [],
+    "dependencies": ["websocket_api"],
     "documentation": "https://github.com/LeeNuss/econext",
     "issue_tracker": "https://github.com/LeeNuss/econext/issues",
     "iot_class": "local_polling",

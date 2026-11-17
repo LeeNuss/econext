@@ -25,6 +25,7 @@ from .const import (
 from .cooling.driver import CoolingDriver
 from .cooling.migrate import async_ensure_fan_coil, async_migrate_heating_curve_unique_ids
 from .coordinator import EconextCoordinator
+from .websocket import async_register_websocket_commands
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ type EconextConfigEntry = ConfigEntry[EconextCoordinator]
 async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> bool:
     """Set up ecoNEXT from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+    async_register_websocket_commands(hass)
 
     # Create API client
     session = async_get_clientsession(hass)
