@@ -356,6 +356,14 @@ class TestStartupParameters:
         with pytest.raises(UpdateFailed, match="no parameters"):
             await coordinator._async_update_data()
 
+    @pytest.mark.asyncio
+    async def test_missing_uid_fails_first_update(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        mock_api.async_fetch_all_params = AsyncMock(return_value={"0": {"name": "PS", "value": "1.0"}})
+        coordinator = EconextCoordinator(mock_hass, mock_api)
+
+        with pytest.raises(UpdateFailed, match="UID"):
+            await coordinator._async_update_data()
+
     @staticmethod
     def _params(count: int) -> dict:
         return {str(i): {"name": f"P{i}", "value": 0} for i in range(count)}
