@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from enum import IntEnum
 
 from homeassistant.components.climate import (
@@ -16,6 +17,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import EconextCoordinator
@@ -403,6 +405,60 @@ def is_circuit_enabled(coordinator: EconextCoordinator, circuit: Circuit) -> boo
         return False
 
 
+def _param_float(coordinator: EconextCoordinator, param_id: str) -> float | None:
+    """Return a parameter value as float, or None when missing or not numeric."""
+    param = coordinator.get_param(param_id)
+    if not param:
+        return None
+    try:
+        return float(param.get("value"))
+    except (TypeError, ValueError):
+        return None
+
+
+def scheduled_preset(coordinator: EconextCoordinator, circuit: Circuit, now: datetime) -> str | None:
+    """Return the preset the circuit's weekly schedule selects at `now`.
+
+    Each day has an AM and a PM bitfield, one bit per half hour (bit 0 = 00:00
+    resp. 12:00). A set bit is a comfort slot, a clear bit an eco slot.
+    """
+    # Schedule fields are ordered Sunday first; datetime.weekday() is Monday=0.
+    day = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")[now.weekday()]
+    slot = now.hour * 2 + now.minute // 30
+    half = "am" if slot < 24 else "pm"
+    param = coordinator.get_param(getattr(circuit, f"schedule_{day}_{half}"))
+    if not param:
+        return None
+    try:
+        bits = int(param.get("value"))
+    except (TypeError, ValueError):
+        return None
+    return PRESET_COMFORT if (bits >> (slot % 24)) & 1 else PRESET_ECO
+
+
+def active_schedule_preset(
+    coordinator: EconextCoordinator, circuit: Circuit, now: datetime | None = None
+) -> str | None:
+    """Return the preset (eco/comfort) a circuit in schedule mode is following.
+
+    The controller's room setpoint for the circuit (CircuitN_romTempSet) is the
+    authority when it matches one of the two preset temperatures. It reads 0
+    for circuits the controller is not actively regulating, and is ambiguous
+    when eco and comfort are equal, so fall back to decoding the schedule.
+    """
+    eco = _param_float(coordinator, circuit.eco_param)
+    comfort = _param_float(coordinator, circuit.comfort_param)
+    setpoint = _param_float(coordinator, circuit.room_temp_setpoint_param)
+
+    if eco is not None and comfort is not None and abs(eco - comfort) >= 0.1 and setpoint is not None:
+        if abs(setpoint - eco) < 0.1:
+            return PRESET_ECO
+        if abs(setpoint - comfort) < 0.1:
+            return PRESET_COMFORT
+
+    return scheduled_preset(coordinator, circuit, now or dt_util.now())
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -636,39 +692,11 @@ class CircuitClimate(EconextEntity, ClimateEntity):
         return None
 
     def _detect_active_preset(self) -> str | None:
-        """Detect which preset is currently active in AUTO mode by comparing setpoint."""
-        # Get current room temperature setpoint (the target temp the system is using)
-        setpoint_param = self.coordinator.get_param(self._room_temp_setpoint_param)
-        if not setpoint_param:
-            return None
-
-        setpoint = setpoint_param.get("value")
-        if setpoint is None:
-            return None
-
-        # Get eco and comfort temperatures
-        eco_param = self.coordinator.get_param(self._eco_param)
-        comfort_param = self.coordinator.get_param(self._comfort_param)
-
-        if not eco_param or not comfort_param:
-            return None
-
-        eco_temp = eco_param.get("value")
-        comfort_temp = comfort_param.get("value")
-
-        if eco_temp is None or comfort_temp is None:
-            return None
-
-        # Compare setpoint to eco and comfort temps
-        # Allow small tolerance for floating point comparison
-        if abs(float(setpoint) - float(eco_temp)) < 0.1:
-            self._last_preset = PRESET_ECO
-            return PRESET_ECO
-        elif abs(float(setpoint) - float(comfort_temp)) < 0.1:
-            self._last_preset = PRESET_COMFORT
-            return PRESET_COMFORT
-
-        # If setpoint doesn't match either, return last known preset or default to comfort
+        """Detect which preset is currently active in AUTO mode."""
+        preset = active_schedule_preset(self.coordinator, CIRCUITS[self._circuit_num])
+        if preset is not None:
+            self._last_preset = preset
+            return preset
         return self._last_preset if self._last_preset else PRESET_COMFORT
 
     def _get_work_state(self) -> int:
