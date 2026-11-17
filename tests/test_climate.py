@@ -14,6 +14,7 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.econext.climate import (
+    _NATIVE_TEMPERATURES,
     CIRCUITS,
     CircuitClimate,
     CircuitWorkState,
@@ -211,7 +212,8 @@ class TestCircuitClimate:
     def test_entity_initialization(self, circuit_2_entity: CircuitClimate) -> None:
         """Test climate entity initialization."""
         assert circuit_2_entity._circuit_num == 2
-        assert circuit_2_entity._attr_temperature_unit == UnitOfTemperature.CELSIUS
+        unit_attr = "_attr_native_temperature_unit" if _NATIVE_TEMPERATURES else "_attr_temperature_unit"
+        assert getattr(circuit_2_entity, unit_attr) == UnitOfTemperature.CELSIUS
         assert circuit_2_entity._attr_translation_key == "circuit"
 
     def test_entity_name_from_controller(self, circuit_2_entity: CircuitClimate) -> None:
