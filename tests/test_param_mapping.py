@@ -89,3 +89,9 @@ def _descriptions():
 def test_entity_param_exists(group, desc, names):
     assert desc.param_id in names, f"{group}.{desc.key} uses {desc.param_id}, not in the controller table"
 
+
+def test_circuit_temperature_correction_is_the_heating_flow_offset(names):
+    desc = next(d for d in const.CONTROLLER_NUMBERS if d.key == "circuit_temperature_correction")
+    assert names[desc.param_id] == "hSMPTSIncreaseCirc"
+    dhw = next(d for d in const.DHW_NUMBERS if d.key == "temperature_correction")
+    assert names[dhw.param_id] == "HeatSourceTempInc"
