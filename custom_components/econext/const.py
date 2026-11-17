@@ -48,6 +48,11 @@ API_ENDPOINT_ALARMS = "/api/alarms"
 # Update interval in seconds
 UPDATE_INTERVAL = 10
 
+# Writes requested within this window are sent to the gateway as one batch
+# (one bus token hold). Long enough to catch service calls fired together,
+# e.g. a schedule card copying a day, short enough to be unnoticeable.
+WRITE_COALESCE_SECONDS = 0.1
+
 # Device info
 MANUFACTURER = "Plum"
 

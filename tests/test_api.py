@@ -7,6 +7,8 @@ import pytest
 
 from custom_components.econext.api import (
     EconextApiError,
+    EconextBatchRejectedError,
+    EconextBatchUnsupportedError,
     EconextConnectionError,
     EconextApi,
 )
@@ -178,6 +180,69 @@ class TestSetParam:
 
         with pytest.raises(EconextApiError, match="status 500"):
             await api.async_set_param("dhwTarget", 45)
+
+
+class TestSetParams:
+    """Test the async_set_params batch method."""
+
+    @staticmethod
+    def _post_returning(mock_session: MagicMock, status: int, body: dict | None = None) -> None:
+        response = AsyncMock()
+        response.status = status
+        response.json = AsyncMock(return_value=body or {})
+        response.__aenter__ = AsyncMock(return_value=response)
+        response.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = MagicMock(return_value=response)
+
+    @pytest.mark.asyncio
+    async def test_set_params_success(self, mock_session: MagicMock) -> None:
+        self._post_returning(
+            mock_session,
+            200,
+            {
+                "success": False,
+                "results": {
+                    "A": {"success": True, "old_value": 0, "new_value": 1},
+                    "B": {"success": False, "old_value": 0, "new_value": 2},
+                },
+            },
+        )
+        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        result = await api.async_set_params({"A": 1, "B": 2})
+
+        assert result == {"A": True, "B": False}
+        call_args = mock_session.post.call_args
+        assert call_args[0][0].endswith("/api/parameters")
+        assert call_args[1]["json"] == {"values": {"A": 1, "B": 2}}
+
+    @pytest.mark.asyncio
+    async def test_set_params_old_gateway(self, mock_session: MagicMock) -> None:
+        self._post_returning(mock_session, 405)
+        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        with pytest.raises(EconextBatchUnsupportedError):
+            await api.async_set_params({"A": 1, "B": 2})
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("status", [400, 404])
+    async def test_set_params_rejected(self, mock_session: MagicMock, status: int) -> None:
+        self._post_returning(mock_session, status)
+        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        with pytest.raises(EconextBatchRejectedError):
+            await api.async_set_params({"A": 1, "B": 2})
+
+    @pytest.mark.asyncio
+    async def test_set_params_timeout_is_soft_success(self, mock_session: MagicMock) -> None:
+        response = AsyncMock()
+        response.__aenter__ = AsyncMock(side_effect=TimeoutError)
+        response.__aexit__ = AsyncMock(return_value=None)
+        mock_session.post = MagicMock(return_value=response)
+        api = EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+        assert await api.async_set_params({"A": 1, "B": 2}) == {"A": True, "B": True}
+        mock_session.post.assert_called_once()
 
 
 class TestTestConnection:

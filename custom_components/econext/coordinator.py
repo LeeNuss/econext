@@ -1,5 +1,7 @@
 """Data coordinator for ecoNEXT."""
 
+import asyncio
+from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
 from typing import Any
@@ -10,10 +12,24 @@ from homeassistant.util import dt as dt_util
 
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 
-from .api import EconextApiError, EconextApi
-from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, UPDATE_INTERVAL
+from .api import (
+    EconextApi,
+    EconextApiError,
+    EconextBatchRejectedError,
+    EconextBatchUnsupportedError,
+)
+from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, UPDATE_INTERVAL, WRITE_COALESCE_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class _PendingWrite:
+    """A queued write and the callers waiting on it."""
+
+    param_key: str
+    value: Any
+    waiters: list[asyncio.Future[bool]] = field(default_factory=list)
 
 
 class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -40,6 +56,11 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # Optional cooling controller; attached by async_setup_entry when the
         # cooling feature is enabled. Ticked at the end of each refresh.
         self.cooling_driver: Any | None = None
+        # Write coalescing: writes requested close together go to the gateway
+        # as one batch. Keyed by parameter name, last value wins.
+        self._pending_writes: dict[str, _PendingWrite] = {}
+        self._write_task: asyncio.Task[None] | None = None
+        self._batch_supported = True
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
@@ -159,8 +180,14 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     async def async_set_param(self, param_id: str | int, value: Any) -> bool:
         """Set a parameter value on the device with optimistic local update.
 
-        Looks up the parameter name from cached data, calls the gateway API
-        by name, and on success updates the local cache for instant UI feedback.
+        Looks up the parameter name from cached data and queues the write.
+        Writes requested within WRITE_COALESCE_SECONDS of each other (or while
+        a previous batch is on the bus) are sent to the gateway together, so
+        N concurrent writes cost one bus token wait instead of N. On success
+        the local cache is updated for instant UI feedback.
+
+        Raises:
+            EconextApiError: The parameter is unknown or the write failed.
 
         """
         param_key = str(param_id)
@@ -172,11 +199,67 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         if not name:
             raise EconextApiError(f"Parameter {param_id} has no name")
 
-        result = await self.api.async_set_param(name, value)
+        waiter: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
+        pending = self._pending_writes.get(name)
+        if pending is None:
+            self._pending_writes[name] = _PendingWrite(param_key, value, [waiter])
+        else:
+            pending.value = value
+            pending.waiters.append(waiter)
 
-        # On success, update local cache for instant UI feedback
-        if result and self.data is not None and param_key in self.data:
-            self.data[param_key]["value"] = value
-            self.async_set_updated_data(self.data)
+        if self._write_task is None or self._write_task.done():
+            self._write_task = asyncio.get_running_loop().create_task(self._async_flush_writes())
 
-        return result
+        return await waiter
+
+    async def _async_flush_writes(self) -> None:
+        """Send queued writes in batches until the queue is empty."""
+        while self._pending_writes:
+            await asyncio.sleep(WRITE_COALESCE_SECONDS)
+            batch, self._pending_writes = self._pending_writes, {}
+            values = {name: write.value for name, write in batch.items()}
+
+            try:
+                outcomes = await self._async_send_writes(values)
+            except Exception as err:  # noqa: BLE001 - surfaced to every waiting caller
+                outcomes = dict.fromkeys(values, err)
+
+            changed = False
+            for name, write in batch.items():
+                outcome = outcomes.get(name)
+                if outcome is True and self.data is not None and write.param_key in self.data:
+                    self.data[write.param_key]["value"] = write.value
+                    changed = True
+                for waiter in write.waiters:
+                    if waiter.done():
+                        continue
+                    if outcome is True:
+                        waiter.set_result(True)
+                    elif isinstance(outcome, BaseException):
+                        waiter.set_exception(outcome)
+                    else:
+                        waiter.set_exception(EconextApiError(f"Controller did not acknowledge write to {name}"))
+
+            if changed:
+                self.async_set_updated_data(self.data)
+
+    async def _async_send_writes(self, values: dict[str, Any]) -> dict[str, bool | Exception]:
+        """Write values through the gateway, batched when it supports it."""
+        if len(values) > 1 and self._batch_supported:
+            try:
+                return dict(await self.api.async_set_params(values))
+            except EconextBatchUnsupportedError:
+                _LOGGER.info("Gateway has no batch write endpoint; writing values one by one")
+                self._batch_supported = False
+            except EconextBatchRejectedError as err:
+                # Nothing was written. Fall back to single writes so the valid
+                # values still apply and each failure reaches its own caller.
+                _LOGGER.debug("Batch rejected (%s); retrying values one by one", err)
+
+        outcomes: dict[str, bool | Exception] = {}
+        for name, value in values.items():
+            try:
+                outcomes[name] = await self.api.async_set_param(name, value)
+            except EconextApiError as err:
+                outcomes[name] = err
+        return outcomes

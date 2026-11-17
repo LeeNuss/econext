@@ -18,6 +18,14 @@ class EconextConnectionError(EconextApiError):
     """Connection error."""
 
 
+class EconextBatchUnsupportedError(EconextApiError):
+    """The gateway predates the batch write endpoint (POST /api/parameters)."""
+
+
+class EconextBatchRejectedError(EconextApiError):
+    """The gateway rejected a batch before writing anything (unknown name or bad value)."""
+
+
 class EconextApi:
     """API client for the econext-gateway.
 
@@ -152,6 +160,52 @@ class EconextApi:
                 raise EconextConnectionError(f"Connection error: {err}") from err
 
         return True
+
+    async def async_set_params(self, values: dict[str, Any]) -> dict[str, bool]:
+        """Set several parameter values in one gateway bus token hold.
+
+        Args:
+            values: Parameter name to new value.
+
+        Returns:
+            Parameter name to True if the controller acknowledged the write.
+
+        Raises:
+            EconextBatchUnsupportedError: The gateway predates the batch endpoint.
+            EconextBatchRejectedError: A name or value was invalid; nothing was written.
+            EconextApiError: Any other non-200 response.
+            EconextConnectionError: The gateway could not be reached.
+
+        """
+        url = f"{self._base_url}{API_ENDPOINT_PARAMETERS}"
+        # One token wait plus up to ~2s per unacknowledged write on the bus.
+        timeout = aiohttp.ClientTimeout(total=30 + 2 * len(values))
+
+        try:
+            async with self._session.post(url, json={"values": values}, timeout=timeout) as response:
+                if response.status == 405:
+                    raise EconextBatchUnsupportedError("Gateway has no batch write endpoint")
+                if response.status in (400, 404):
+                    raise EconextBatchRejectedError(f"Gateway rejected batch: status {response.status}")
+                if response.status != 200:
+                    raise EconextApiError(f"API returned status {response.status}")
+                data = await response.json()
+        except TimeoutError:
+            # As for single writes: the batch usually applied and only the
+            # response wait timed out. Not retried, since that would queue the
+            # whole batch on the bus again; the next poll verifies it.
+            _LOGGER.warning(
+                "Batch write of %d values timed out; values usually apply, will be verified on next poll",
+                len(values),
+            )
+            return dict.fromkeys(values, True)
+        except aiohttp.ClientError as err:
+            raise EconextConnectionError(f"Connection error: {err}") from err
+
+        results = data.get("results", {})
+        acked = {name: bool(results.get(name, {}).get("success")) for name in values}
+        _LOGGER.debug("Batch set %s", acked)
+        return acked
 
     async def async_submit_thermostat_temperature(self, temperature: float) -> bool:
         """Submit a room temperature to the virtual thermostat."""
