@@ -496,6 +496,18 @@ CONTROLLER_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         native_max_value=10,
         native_step=1,
     ),
+    # Added on top of the calculated circuit temperature to give the heat
+    # source flow target while heating ("Circuit temperature correction" on
+    # the panel). The DHW counterpart is HeatSourceTempInc (481).
+    EconextNumberEntityDescription(
+        key="circuit_temperature_correction",
+        param_id="1309",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-plus",
+        native_min_value=0,
+        native_max_value=20,
+        native_step=1,
+    ),
     # Circuit-2 continuous-cool flag (1 = continuous). Required by the
     # cooling controller; circuit-2 scoped but exposed here for visibility.
     EconextNumberEntityDescription(
