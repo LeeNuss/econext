@@ -498,10 +498,40 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+# Home Assistant 2026.11 renamed the climate temperature properties to native_*
+# and drops the old names in 2027.11. Older versions only know the old names.
+_NATIVE_TEMPERATURES = hasattr(ClimateEntity, "native_target_temperature")
+
+
 class CircuitClimate(EconextEntity, ClimateEntity):
     """Representation of a heating circuit climate entity."""
 
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    if _NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+
+        @property
+        def native_current_temperature(self) -> float | None:
+            """Return the current temperature from thermostat."""
+            return self._read_current_temperature()
+
+        @property
+        def native_target_temperature(self) -> float | None:
+            """Return the target temperature based on current preset."""
+            return self._read_target_temperature()
+
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
+
+        @property
+        def current_temperature(self) -> float | None:
+            """Return the current temperature from thermostat."""
+            return self._read_current_temperature()
+
+        @property
+        def target_temperature(self) -> float | None:
+            """Return the target temperature based on current preset."""
+            return self._read_target_temperature()
+
     _attr_preset_modes = [PRESET_ECO, PRESET_COMFORT, PRESET_SCHEDULE, PRESET_BOOST]
     _attr_min_temp = 10.0
     _attr_max_temp = 35.0
@@ -570,8 +600,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
 
         return modes
 
-    @property
-    def current_temperature(self) -> float | None:
+    def _read_current_temperature(self) -> float | None:
         """Return the current temperature from thermostat."""
         temp_param = self.coordinator.get_param(self._thermostat_param)
         if temp_param:
@@ -580,8 +609,7 @@ class CircuitClimate(EconextEntity, ClimateEntity):
                 return float(temp)
         return None
 
-    @property
-    def target_temperature(self) -> float | None:
+    def _read_target_temperature(self) -> float | None:
         """Return the target temperature based on current preset."""
         preset = self.preset_mode
         if preset == PRESET_SCHEDULE:
