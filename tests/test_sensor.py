@@ -878,7 +878,8 @@ class TestSubDeviceViaDevice:
         """Sub-devices reference the main device by registry id, not the deprecated via_device."""
         coordinator.main_device_id = "main-device-registry-id"
 
-        device_info = self._dhw_sensor(coordinator).device_info
+        with patch("custom_components.econext.entity._HAS_VIA_DEVICE_ID", True):
+            device_info = self._dhw_sensor(coordinator).device_info
 
         assert device_info["via_device_id"] == "main-device-registry-id"
         assert "via_device" not in device_info
