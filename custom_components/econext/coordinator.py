@@ -61,6 +61,9 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self._pending_writes: dict[str, _PendingWrite] = {}
         self._write_task: asyncio.Task[None] | None = None
         self._batch_supported = True
+        # Parameter count when the platforms created their entities; see
+        # _check_late_parameters.
+        self._entities_param_count: int | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
@@ -68,6 +71,13 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             params = await self.api.async_fetch_all_params()
         except EconextApiError as err:
             raise UpdateFailed(f"Error fetching data: {err}") from err
+
+        if not params:
+            # A gateway that has just started has nothing cached yet. Failing
+            # here makes the first refresh raise ConfigEntryNotReady, so setup
+            # is retried instead of creating no entities.
+            raise UpdateFailed("Gateway returned no parameters yet")
+        self._check_late_parameters(len(params))
 
         # Fetch alarms (non-fatal - alarms are secondary to parameters)
         try:
@@ -92,6 +102,35 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 _LOGGER.exception("Cooling controller tick failed")
 
         return params
+
+    def mark_entities_created(self) -> None:
+        """Record how many parameters the entity platforms were built from."""
+        self._entities_param_count = len(self.data or {})
+
+    def _check_late_parameters(self, count: int) -> None:
+        """Reload once if many parameters arrived after the entities were made.
+
+        Entities are only created for parameters present at setup. Gateways
+        before 0.3.0b2 serve their cache while the first poll is still
+        filling it, so Home Assistant starting at the same time can set up
+        from a partial set and miss whole groups of entities (schedules).
+        Newer gateways answer 503 until the set is complete. Small growth is
+        normal (values that read as a sentinel at first), so only a jump of
+        over 10% triggers the reload.
+        """
+        baseline = self._entities_param_count
+        if baseline is None or count <= baseline * 1.1:
+            return
+        entry = self.config_entry
+        if entry is None:
+            return
+        _LOGGER.info(
+            "Gateway now reports %d parameters, %d at setup; reloading to add the missing entities",
+            count,
+            baseline,
+        )
+        self._entities_param_count = None
+        self.hass.config_entries.async_schedule_reload(entry.entry_id)
 
     def get_param(self, param_id: str | int) -> dict[str, Any] | None:
         """Get a parameter by ID."""

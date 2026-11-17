@@ -343,3 +343,49 @@ class TestWriteCoalescing:
         assert await first == [True, True]
         assert await second == [True, True]
         assert calls == [{"A": 10, "B": 20}, {"A": 11, "C": 30}]
+
+
+class TestStartupParameters:
+    """Setup must not settle for a partly loaded gateway."""
+
+    @pytest.mark.asyncio
+    async def test_empty_parameter_set_fails_update(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        mock_api.async_fetch_all_params = AsyncMock(return_value={})
+        coordinator = EconextCoordinator(mock_hass, mock_api)
+
+        with pytest.raises(UpdateFailed, match="no parameters"):
+            await coordinator._async_update_data()
+
+    @staticmethod
+    def _params(count: int) -> dict:
+        return {str(i): {"name": f"P{i}", "value": 0} for i in range(count)}
+
+    def _coordinator(self, mock_hass: MagicMock, mock_api: MagicMock) -> EconextCoordinator:
+        coordinator = EconextCoordinator(mock_hass, mock_api)
+        coordinator.config_entry = MagicMock(entry_id="entry1")
+        coordinator.data = self._params(100)
+        coordinator.mark_entities_created()
+        return coordinator
+
+    def test_large_growth_reloads_once(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        coordinator = self._coordinator(mock_hass, mock_api)
+
+        coordinator._check_late_parameters(500)
+        coordinator._check_late_parameters(600)
+
+        mock_hass.config_entries.async_schedule_reload.assert_called_once_with("entry1")
+
+    def test_small_growth_does_not_reload(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        coordinator = self._coordinator(mock_hass, mock_api)
+
+        coordinator._check_late_parameters(105)
+
+        mock_hass.config_entries.async_schedule_reload.assert_not_called()
+
+    def test_no_reload_before_entities_exist(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        coordinator = EconextCoordinator(mock_hass, mock_api)
+        coordinator.config_entry = MagicMock(entry_id="entry1")
+
+        coordinator._check_late_parameters(500)
+
+        mock_hass.config_entries.async_schedule_reload.assert_not_called()

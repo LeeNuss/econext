@@ -96,6 +96,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    coordinator.mark_entities_created()
 
     # Clean up orphaned devices (no entities after platform setup)
     await _async_cleanup_orphaned_devices(hass, entry)
