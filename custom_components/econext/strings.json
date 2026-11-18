@@ -406,7 +406,7 @@
                 "name": "Compressor min starts setting"
             },
             "heat_source_cooling_hyst": {
-                "name": "Heat source cooling hysteresis"
+                "name": "Cooling start hysteresis"
             },
             "circuit_temperature_correction": {
                 "name": "Circuit temperature correction"
