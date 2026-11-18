@@ -182,6 +182,4 @@ across a real demand period — every decision is also logged
 
 ## Supported Devices
 
-- Plum ecoMAX controllers (ecoMAX360i and similar)
-- ecoTRONIC heat pump controllers
-- Other devices using the GM3 serial protocol
+- ecoMAX360i controllers

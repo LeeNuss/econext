@@ -64,6 +64,10 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # Parameter count when the platforms created their entities; see
         # _check_late_parameters.
         self._entities_param_count: int | None = None
+        # Device registry id of the main controller device. Set by
+        # async_setup_entry before the platforms load, so sub-devices can
+        # reference it via `via_device_id`.
+        self.main_device_id: str | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
@@ -77,6 +81,11 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             # here makes the first refresh raise ConfigEntryNotReady, so setup
             # is retried instead of creating no entities.
             raise UpdateFailed("Gateway returned no parameters yet")
+        if self.data is None and not params.get("10", {}).get("value"):
+            # Unique ids and device identifiers are built from the controller
+            # UID (param 10). Setting up without it files every entity under
+            # "unknown" and leaves those behind once the UID shows up.
+            raise UpdateFailed("Gateway has not reported the controller UID yet")
         self._check_late_parameters(len(params))
 
         # Fetch alarms (non-fatal - alarms are secondary to parameters)

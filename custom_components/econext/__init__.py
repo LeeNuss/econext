@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_COOLING_CIRCUIT,
     DEFAULT_PORT,
     DOMAIN,
+    MANUFACTURER,
     PLATFORMS,
 )
 from .cooling.driver import CoolingDriver
@@ -94,6 +95,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # re-create entities under the new stable form.
     async_migrate_heating_curve_unique_ids(hass, entry)
 
+    # Register the main controller device before the platforms load, so
+    # sub-devices can link to it by device id regardless of entity order.
+    main_device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, coordinator.get_device_uid())},
+        name=coordinator.get_device_name(),
+        manufacturer=MANUFACTURER,
+        model="ecoMAX360i",
+    )
+    coordinator.main_device_id = main_device.id
+
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     coordinator.mark_entities_created()
@@ -119,6 +131,15 @@ async def _async_cleanup_orphaned_devices(hass: HomeAssistant, entry: ConfigEntr
 
     devices = dr.async_entries_for_config_entry(device_reg, entry.entry_id)
     for device in devices:
+        # Left behind by a setup that ran before the gateway knew the UID;
+        # removing the device takes its entities with it.
+        if uid != "unknown" and any(
+            domain == DOMAIN and identifier.startswith("unknown") for domain, identifier in device.identifiers
+        ):
+            _LOGGER.info("Removing device without controller UID: %s (%s)", device.name, device.id)
+            device_reg.async_remove_device(device.id)
+            continue
+
         entities = er.async_entries_for_device(entity_reg, device.id, include_disabled_entities=True)
         if not entities:
             _LOGGER.info("Removing orphaned device: %s (%s)", device.name, device.id)

@@ -91,6 +91,7 @@ async def async_setup_entry(
                         options=description.options,
                         value_map=description.value_map,
                         reverse_map=description.reverse_map,
+                        bit_position=description.bit_position,
                     )
                     entities.append(EconextSelect(coordinator, circuit_desc, device_id=f"circuit_{circuit_num}"))
                 else:
@@ -108,6 +109,7 @@ def _get_circuit_param_id(circuit, select_key: str) -> str | None:
     """Get the parameter ID for a circuit select entity based on its key."""
     mapping = {
         "circuit_type": circuit.type_settings_param,
+        "regulation_method": circuit.settings_param,
     }
     return mapping.get(select_key)
 
@@ -145,8 +147,11 @@ class EconextSelect(EconextEntity, SelectEntity):
         if value is None:
             return None
 
-        # Map the raw value to an option string
-        return self._description.value_map.get(int(value))
+        raw_value = int(value)
+        if self._description.bit_position is not None:
+            raw_value = (raw_value >> self._description.bit_position) & 1
+
+        return self._description.value_map.get(raw_value)
 
     async def async_select_option(self, option: str) -> None:
         """Set the selected option."""
@@ -163,4 +168,19 @@ class EconextSelect(EconextEntity, SelectEntity):
             option,
             raw_value,
         )
+        if self._description.bit_position is not None:
+            current_value = self._get_param_value()
+            if current_value is None:
+                _LOGGER.error(
+                    "Cannot set %s because current value of param %s is unavailable",
+                    self._description.key,
+                    self._description.param_id,
+                )
+                return
+
+            bit_mask = 1 << self._description.bit_position
+            new_value = int(current_value) | bit_mask if raw_value else int(current_value) & ~bit_mask
+            await self.coordinator.async_set_param(self._description.param_id, new_value)
+            return
+
         await self.coordinator.async_set_param(self._description.param_id, raw_value)

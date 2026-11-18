@@ -284,8 +284,8 @@ class TestCircuitTypeSelect:
             DeviceType,
         )
 
-        assert len(CIRCUIT_SELECTS) == 1
-        circuit_type = CIRCUIT_SELECTS[0]
+        assert len(CIRCUIT_SELECTS) == 2
+        circuit_type = next(s for s in CIRCUIT_SELECTS if s.key == "circuit_type")
 
         assert circuit_type.key == "circuit_type"
         assert circuit_type.options == CIRCUIT_TYPE_OPTIONS
@@ -352,3 +352,87 @@ class TestCircuitTypeSelect:
 
         # Should set to 3 (fan coil)
         coordinator.async_set_param.assert_called_once_with("269", 3)
+
+
+class TestCircuitRegulationTypeSelect:
+    """Test circuit regulation type select functionality."""
+
+    def test_regulation_method_select_definition(self) -> None:
+        """Test circuit regulation type select uses CircuitXSettings bit 11."""
+        from custom_components.econext.const import (
+            CIRCUIT_REGULATION_METHOD_MAPPING,
+            CIRCUIT_REGULATION_METHOD_OPTIONS,
+            CIRCUIT_SELECTS,
+        )
+
+        regulation_method = next(s for s in CIRCUIT_SELECTS if s.key == "regulation_method")
+
+        assert regulation_method.options == CIRCUIT_REGULATION_METHOD_OPTIONS
+        assert regulation_method.value_map == CIRCUIT_REGULATION_METHOD_MAPPING
+        assert regulation_method.bit_position == 11
+
+    def test_regulation_method_weather(self, coordinator: EconextCoordinator) -> None:
+        """A set regulation bit represents weather regulation."""
+        coordinator.data["231"] = {"id": 231, "value": 0x816D7D}
+        description = EconextSelectEntityDescription(
+            key="regulation_method",
+            param_id="231",
+            options=["weather", "fixed"],
+            value_map={0: "fixed", 1: "weather"},
+            reverse_map={"fixed": 0, "weather": 1},
+            bit_position=11,
+        )
+
+        assert EconextSelect(coordinator, description).current_option == "weather"
+
+    def test_regulation_method_fixed(self, coordinator: EconextCoordinator) -> None:
+        """A clear regulation bit represents fixed regulation."""
+        coordinator.data["231"] = {"id": 231, "value": 0x81657D}
+        description = EconextSelectEntityDescription(
+            key="regulation_method",
+            param_id="231",
+            options=["weather", "fixed"],
+            value_map={0: "fixed", 1: "weather"},
+            reverse_map={"fixed": 0, "weather": 1},
+            bit_position=11,
+        )
+
+        assert EconextSelect(coordinator, description).current_option == "fixed"
+
+    @pytest.mark.asyncio
+    async def test_setting_regulation_method_preserves_other_settings_bits(
+        self, coordinator: EconextCoordinator
+    ) -> None:
+        """Setting fixed regulation clears only bit 11."""
+        coordinator.data["231"] = {"id": 231, "value": 0x816D7D}
+        description = EconextSelectEntityDescription(
+            key="regulation_method",
+            param_id="231",
+            options=["weather", "fixed"],
+            value_map={0: "fixed", 1: "weather"},
+            reverse_map={"fixed": 0, "weather": 1},
+            bit_position=11,
+        )
+
+        await EconextSelect(coordinator, description).async_select_option("fixed")
+
+        coordinator.async_set_param.assert_called_once_with("231", 0x81657D)
+
+    @pytest.mark.asyncio
+    async def test_setting_weather_regulation_preserves_other_settings_bits(
+        self, coordinator: EconextCoordinator
+    ) -> None:
+        """Setting weather regulation sets only bit 11."""
+        coordinator.data["231"] = {"id": 231, "value": 0x81657D}
+        description = EconextSelectEntityDescription(
+            key="regulation_method",
+            param_id="231",
+            options=["weather", "fixed"],
+            value_map={0: "fixed", 1: "weather"},
+            reverse_map={"fixed": 0, "weather": 1},
+            bit_position=11,
+        )
+
+        await EconextSelect(coordinator, description).async_select_option("weather")
+
+        coordinator.async_set_param.assert_called_once_with("231", 0x816D7D)

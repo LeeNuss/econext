@@ -408,6 +408,9 @@
             "heat_source_cooling_hyst": {
                 "name": "Heat source cooling hysteresis"
             },
+            "circuit_temperature_correction": {
+                "name": "Circuit temperature correction"
+            },
             "circuit2_cooling_down_range": {
                 "name": "Circuit 2 continuous cooling"
             },
@@ -721,6 +724,13 @@
                     "friday": "Friday",
                     "saturday": "Saturday",
                     "sunday": "Sunday"
+                }
+            },
+            "regulation_method": {
+                "name": "Regulation method",
+                "state": {
+                    "weather": "Weather",
+                    "fixed": "Fixed"
                 }
             },
             "circuit_type": {

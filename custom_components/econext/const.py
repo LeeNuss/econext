@@ -279,6 +279,7 @@ class EconextSelectEntityDescription:
     options: list[str] = None  # Available options
     value_map: dict[int, str] = None  # Map API values to option strings
     reverse_map: dict[str, int] = None  # Map option strings to API values
+    bit_position: int | None = None  # For bitmap-based selects
 
 
 @dataclass(frozen=True)
@@ -493,6 +494,18 @@ CONTROLLER_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         icon="mdi:snowflake-thermometer",
         native_min_value=0,
         native_max_value=10,
+        native_step=1,
+    ),
+    # Added on top of the calculated circuit temperature to give the heat
+    # source flow target while heating ("Circuit temperature correction" on
+    # the panel). The DHW counterpart is HeatSourceTempInc (481).
+    EconextNumberEntityDescription(
+        key="circuit_temperature_correction",
+        param_id="1309",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-plus",
+        native_min_value=0,
+        native_max_value=20,
         native_step=1,
     ),
     # Circuit-2 continuous-cool flag (1 = continuous). Required by the
@@ -1332,6 +1345,20 @@ CIRCUIT_TYPE_OPTIONS = list(CIRCUIT_TYPE_MAPPING.values())
 
 CIRCUIT_TYPE_REVERSE = {value: key for key, value in CIRCUIT_TYPE_MAPPING.items()}
 
+# Circuit regulation type is bit 11 of CircuitXSettings.
+# Tested controller behavior: fixed regulation has the bit clear and weather
+# regulation has it set.
+CIRCUIT_REGULATION_METHOD_MAPPING = {
+    0: "fixed",
+    1: "weather",
+}
+
+CIRCUIT_REGULATION_METHOD_OPTIONS = list(CIRCUIT_REGULATION_METHOD_MAPPING.values())
+
+CIRCUIT_REGULATION_METHOD_REVERSE = {
+    value: key for key, value in CIRCUIT_REGULATION_METHOD_MAPPING.items()
+}
+
 # Circuit sensors - read only temperature sensors
 # Note: These use a function-based approach since each circuit has the same pattern
 # Circuit-specific param IDs are defined in climate.py CIRCUITS dict
@@ -1555,6 +1582,17 @@ CIRCUIT_SELECTS: tuple[EconextSelectEntityDescription, ...] = (
         options=CIRCUIT_TYPE_OPTIONS,
         value_map=CIRCUIT_TYPE_MAPPING,
         reverse_map=CIRCUIT_TYPE_REVERSE,
+    ),
+    # Circuit regulation type (bit 11 of CircuitXSettings)
+    EconextSelectEntityDescription(
+        key="regulation_method",
+        param_id="",  # Set dynamically per circuit (CircuitXSettings)
+        device_type=DeviceType.CIRCUIT,
+        icon="mdi:thermometer-auto",
+        options=CIRCUIT_REGULATION_METHOD_OPTIONS,
+        value_map=CIRCUIT_REGULATION_METHOD_MAPPING,
+        reverse_map=CIRCUIT_REGULATION_METHOD_REVERSE,
+        bit_position=11,
     ),
 )
 

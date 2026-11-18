@@ -1,5 +1,6 @@
 """Tests for the econext climate platform."""
 
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,9 +14,11 @@ from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.econext.climate import (
+    _NATIVE_TEMPERATURES,
     CIRCUITS,
     CircuitClimate,
     CircuitWorkState,
+    active_schedule_preset,
     async_setup_entry,
     is_circuit_enabled,
 )
@@ -209,7 +212,8 @@ class TestCircuitClimate:
     def test_entity_initialization(self, circuit_2_entity: CircuitClimate) -> None:
         """Test climate entity initialization."""
         assert circuit_2_entity._circuit_num == 2
-        assert circuit_2_entity._attr_temperature_unit == UnitOfTemperature.CELSIUS
+        unit_attr = "_attr_native_temperature_unit" if _NATIVE_TEMPERATURES else "_attr_temperature_unit"
+        assert getattr(circuit_2_entity, unit_attr) == UnitOfTemperature.CELSIUS
         assert circuit_2_entity._attr_translation_key == "circuit"
 
     def test_entity_name_from_controller(self, circuit_2_entity: CircuitClimate) -> None:
@@ -896,3 +900,56 @@ class TestOperatingModeHVACModes:
         modes = entity.hvac_modes
         assert modes == [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT]
         assert HVACMode.COOL not in modes
+
+
+class TestActiveSchedulePreset:
+    """Which preset a circuit in schedule mode follows (issues #21, #22)."""
+
+    # Tuesday 2026-11-17: 06:15 is AM bit 12, 17:15 is PM bit 10.
+    MORNING = datetime(2026, 11, 17, 6, 15)
+    EVENING = datetime(2026, 11, 17, 17, 15)
+
+    @pytest.fixture
+    def c1(self, coordinator: EconextCoordinator):
+        circuit = CIRCUITS[1]
+        coordinator.data[circuit.comfort_param] = {"value": 21.0}
+        coordinator.data[circuit.eco_param] = {"value": 19.0}
+        coordinator.data[circuit.room_temp_setpoint_param] = {"value": 0.0}
+        # Comfort 06:00-12:00 and 12:00-16:00, eco 16:00-19:00
+        coordinator.data[circuit.schedule_tuesday_am] = {"value": 0b111111111111 << 12}
+        coordinator.data[circuit.schedule_tuesday_pm] = {"value": 0b11111111}
+        return circuit
+
+    def test_setpoint_matching_eco(self, coordinator: EconextCoordinator, c1) -> None:
+        coordinator.data[c1.room_temp_setpoint_param] = {"value": 19.0}
+        assert active_schedule_preset(coordinator, c1, self.MORNING) == PRESET_ECO
+
+    def test_setpoint_matching_comfort(self, coordinator: EconextCoordinator, c1) -> None:
+        coordinator.data[c1.room_temp_setpoint_param] = {"value": 21.0}
+        assert active_schedule_preset(coordinator, c1, self.EVENING) == PRESET_COMFORT
+
+    def test_zero_setpoint_falls_back_to_schedule(self, coordinator: EconextCoordinator, c1) -> None:
+        assert active_schedule_preset(coordinator, c1, self.MORNING) == PRESET_COMFORT
+        assert active_schedule_preset(coordinator, c1, self.EVENING) == PRESET_ECO
+
+    def test_equal_presets_fall_back_to_schedule(self, coordinator: EconextCoordinator, c1) -> None:
+        coordinator.data[c1.eco_param] = {"value": 21.0}
+        coordinator.data[c1.room_temp_setpoint_param] = {"value": 21.0}
+        assert active_schedule_preset(coordinator, c1, self.EVENING) == PRESET_ECO
+
+    def test_climate_target_follows_eco_slot(self, coordinator: EconextCoordinator, c1) -> None:
+        coordinator.data[c1.work_state_param] = {"value": CircuitWorkState.AUTO}
+        entity = CircuitClimate(
+            coordinator,
+            circuit_num=1,
+            name_param=c1.name_param,
+            work_state_param=c1.work_state_param,
+            settings_param=c1.settings_param,
+            thermostat_param=c1.thermostat_param,
+            comfort_param=c1.comfort_param,
+            eco_param=c1.eco_param,
+            room_temp_setpoint_param=c1.room_temp_setpoint_param,
+            boost_time_left_param=c1.boost_time_left_param,
+        )
+        with patch("custom_components.econext.climate.dt_util.now", return_value=self.EVENING):
+            assert entity.target_temperature == 19.0

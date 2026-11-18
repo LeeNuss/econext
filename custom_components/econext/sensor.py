@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .climate import CIRCUITS, is_circuit_enabled
+from .climate import CIRCUITS, Circuit, active_schedule_preset, is_circuit_enabled
 from .const import (
     CIRCUIT_SCHEDULE_DIAGNOSTIC_SENSORS,
     CIRCUIT_SENSORS,
@@ -203,19 +203,16 @@ async def async_setup_entry(
 
                     # Use special sensor class for active_preset_mode
                     if description.key == "active_preset_mode":
-                        # Also check that eco, comfort and setpoint params exist
+                        # Also check that eco and comfort params exist
                         if (
                             coordinator.get_param(circuit.eco_param) is not None
                             and coordinator.get_param(circuit.comfort_param) is not None
-                            and coordinator.get_param(circuit.room_temp_setpoint_param) is not None
                         ):
                             entities.append(
                                 EconextActiveScheduleModeSensor(
                                     coordinator,
                                     circuit_desc,
-                                    circuit.eco_param,
-                                    circuit.comfort_param,
-                                    circuit.room_temp_setpoint_param,
+                                    circuit,
                                     device_id=f"circuit_{circuit_num}",
                                 )
                             )
@@ -448,76 +445,23 @@ class EconextScheduleDiagnosticSensor(EconextSensor):
 
 
 class EconextActiveScheduleModeSensor(EconextSensor):
-    """Sensor that shows the active schedule mode (eco/comfort) for a circuit.
-
-    Computes the active mode by comparing the room temperature setpoint
-    to the eco and comfort temperature settings.
-    """
+    """Sensor that shows the active schedule mode (eco/comfort) for a circuit."""
 
     def __init__(
         self,
         coordinator: EconextCoordinator,
         description: EconextSensorEntityDescription,
-        eco_param_id: str,
-        comfort_param_id: str,
-        setpoint_param_id: str,
+        circuit: Circuit,
         device_id: str | None = None,
     ) -> None:
         """Initialize the active schedule mode sensor."""
         super().__init__(coordinator, description, device_id)
-        self._eco_param_id = eco_param_id
-        self._comfort_param_id = comfort_param_id
-        self._setpoint_param_id = setpoint_param_id
+        self._circuit = circuit
 
     @property
     def native_value(self) -> str | None:
-        """Return the active schedule mode (eco or comfort).
-
-        Compares the current room_temp_setpoint to eco_temp and comfort_temp
-        to determine which mode the circuit is currently following.
-        """
-        # Get current room temperature setpoint (the target temp the system is using)
-        setpoint_param = self.coordinator.get_param(self._setpoint_param_id)
-        if not setpoint_param:
-            return None
-
-        setpoint = setpoint_param.get("value")
-        if setpoint is None or setpoint == 999.0:
-            return None
-
-        # Get eco and comfort temperatures
-        eco_param = self.coordinator.get_param(self._eco_param_id)
-        comfort_param = self.coordinator.get_param(self._comfort_param_id)
-
-        if not eco_param or not comfort_param:
-            return None
-
-        eco_temp = eco_param.get("value")
-        comfort_temp = comfort_param.get("value")
-
-        if eco_temp is None or comfort_temp is None:
-            return None
-
-        if eco_temp == 999.0 or comfort_temp == 999.0:
-            return None
-
-        try:
-            setpoint_float = float(setpoint)
-            eco_float = float(eco_temp)
-            comfort_float = float(comfort_temp)
-
-            # Compare setpoint to eco and comfort temps
-            # If setpoint is closer to comfort, we're in comfort (day) mode
-            # If setpoint is closer to eco, we're in eco (night) mode
-            eco_diff = abs(setpoint_float - eco_float)
-            comfort_diff = abs(setpoint_float - comfort_float)
-
-            if comfort_diff < eco_diff:
-                return "comfort"
-            else:
-                return "eco"
-        except (ValueError, TypeError):
-            return None
+        """Return the active schedule mode (eco or comfort)."""
+        return active_schedule_preset(self.coordinator, self._circuit)
 
 
 class EconextAlarmSensor(EconextEntity, SensorEntity):
