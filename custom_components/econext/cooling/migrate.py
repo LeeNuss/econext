@@ -93,19 +93,41 @@ def async_migrate_heating_curve_unique_ids(hass, entry) -> None:
     Safe to call every setup: once renamed, the old pattern doesn't match
     any registry entries.
     """
-    reg = er.async_get(hass)
     uid = entry.runtime_data.get_device_uid()
     if not uid or uid == "unknown":
         return
 
     # Build the set of "old" heating_curve unique_ids per circuit.
-    old_to_new: dict[str, tuple[str, str]] = {}
+    old_to_new: dict[str, tuple[str, int]] = {}
     for n, cfg in CIRCUITS.items():
         new_uid = f"{uid}_circuit_{n}_heating_curve"
         for regid in (cfg.curve_radiator_param, cfg.curve_floor_param, cfg.curve_fancoil_param):
             if regid:
                 old_to_new[f"{uid}_circuit_{n}_{regid}"] = (new_uid, n)
 
+    _rename_unique_ids(hass, entry, old_to_new, "heating_curve")
+
+
+def async_migrate_min_setpoint_cooling_limit_unique_id(hass, entry) -> None:
+    """Move the circuit 2 "continuous cooling" number onto its circuit.
+
+    Param 1311 used to be a 0-1 number on the controller device with unique_id
+    `<uid>_1311`. It is now the per-circuit min cooling setpoint limit,
+    `<uid>_circuit_2_1311`. Renaming the registry entry keeps the entity_id
+    and history. Safe to call every setup.
+    """
+    uid = entry.runtime_data.get_device_uid()
+    if not uid or uid == "unknown":
+        return
+
+    param = CIRCUITS[2].min_setpoint_cooling_limit_param
+    old_to_new = {f"{uid}_{param}": (f"{uid}_circuit_2_{param}", 2)}
+    _rename_unique_ids(hass, entry, old_to_new, "min_setpoint_cooling_limit")
+
+
+def _rename_unique_ids(hass, entry, old_to_new: dict[str, tuple[str, int]], what: str) -> None:
+    """Rename registry entries from old to new unique_ids, dropping duplicates."""
+    reg = er.async_get(hass)
     for ent in list(er.async_entries_for_config_entry(reg, entry.entry_id)):
         if ent.platform != DOMAIN:
             continue
@@ -118,14 +140,16 @@ def async_migrate_heating_curve_unique_ids(hass, entry) -> None:
         if existing and existing != ent.entity_id:
             reg.async_remove(ent.entity_id)
             _LOGGER.info(
-                "Cooling: removed duplicate legacy heating_curve entity %s for circuit %s",
+                "Cooling: removed duplicate legacy %s entity %s for circuit %s",
+                what,
                 ent.entity_id,
                 circuit_num,
             )
             continue
         reg.async_update_entity(ent.entity_id, new_unique_id=new_uid)
         _LOGGER.info(
-            "Cooling: migrated heating_curve unique_id %s -> %s (circuit %s)",
+            "Cooling: migrated %s unique_id %s -> %s (circuit %s)",
+            what,
             ent.unique_id,
             new_uid,
             circuit_num,

@@ -34,11 +34,9 @@ REG_MAX_PUMP_SPEED = 1441
 # cooling-cycle start. (register id, target value).
 REG_HEAT_SOURCE_COOLING_HYST = 473  # must be 0 for the dip-and-recover trick
 REG_MIN_BREAK_TIME = 499  # minutes
-REG_CIRCUIT2_COOLING_DOWN_RANGE = 1311  # circuit-2 continuous-cool flag
 
 SETUP_PARAMS: list[tuple[int, float]] = [
     (REG_HEAT_SOURCE_COOLING_HYST, 0),
-    (REG_CIRCUIT2_COOLING_DOWN_RANGE, 1),
     (REG_MIN_BREAK_TIME, 5),
 ]
 

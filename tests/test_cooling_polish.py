@@ -17,6 +17,7 @@ from custom_components.econext.const import (
 from custom_components.econext.cooling.migrate import (
     async_ensure_fan_coil,
     async_migrate_heating_curve_unique_ids,
+    async_migrate_min_setpoint_cooling_limit_unique_id,
 )
 from custom_components.econext.coordinator import EconextCoordinator
 from custom_components.econext.number import EconextNumber
@@ -234,3 +235,25 @@ def test_migration_drops_legacy_duplicate_if_new_already_exists():
 
     assert reg.removed == ["number.x_heating_curve_2"]
     assert reg.renames == []
+
+
+def test_migration_moves_circuit_2_cooling_limit_onto_its_circuit():
+    uid = "TESTUID"
+    # The old 0-1 "continuous cooling" number sat on the controller device.
+    legacy = _RegEntry("number.x_circuit_2_continuous_cooling", f"{uid}_1311")
+    other_controller = _RegEntry("number.x_circuit_temperature_correction", f"{uid}_1309")
+    reg = _FakeRegistry([legacy, other_controller])
+
+    entry = _make_entry(uid)
+    with patch(
+        "custom_components.econext.cooling.migrate.er.async_get", return_value=reg
+    ), patch(
+        "custom_components.econext.cooling.migrate.er.async_entries_for_config_entry",
+        return_value=reg.entries,
+    ):
+        async_migrate_min_setpoint_cooling_limit_unique_id(MagicMock(), entry)
+        # Second run finds nothing left to rename.
+        async_migrate_min_setpoint_cooling_limit_unique_id(MagicMock(), entry)
+
+    assert reg.renames == [("number.x_circuit_2_continuous_cooling", f"{uid}_circuit_2_1311")]
+    assert other_controller.unique_id == f"{uid}_1309"

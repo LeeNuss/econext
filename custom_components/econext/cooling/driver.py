@@ -31,7 +31,6 @@ from .const import (
     DEFAULTS,
     MIN_TARGET_TEMP,
     PARAM_EPSILON,
-    REG_CIRCUIT2_COOLING_DOWN_RANGE,
     REG_COMP_HZ,
     REG_FLOW_HP,
     REG_HEAT_SOURCE_COOLING_HYST,
@@ -421,14 +420,6 @@ class CoolingDriver:
         """Idempotently assert the one-time HP setup params."""
         await self._assert_param(REG_HEAT_SOURCE_COOLING_HYST, 0, dry_run)
         await self._assert_param(REG_MIN_BREAK_TIME, 5, dry_run)
-        # The continuous-cool flag register is only known for circuit 2.
-        if self.circuit == 2:
-            await self._assert_param(REG_CIRCUIT2_COOLING_DOWN_RANGE, 1, dry_run)
-        else:
-            _LOGGER.debug(
-                "Cooling: continuous-cool flag register unknown for circuit %d; skipping",
-                self.circuit,
-            )
 
     async def _assert_pump_speeds(self, dry_run: bool) -> None:
         """Assert cooling pump speeds (max before min), season + work_mode gated."""

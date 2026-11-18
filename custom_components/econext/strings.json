@@ -406,13 +406,10 @@
                 "name": "Compressor min starts setting"
             },
             "heat_source_cooling_hyst": {
-                "name": "Heat source cooling hysteresis"
+                "name": "Cooling start hysteresis"
             },
             "circuit_temperature_correction": {
                 "name": "Circuit temperature correction"
-            },
-            "circuit2_cooling_down_range": {
-                "name": "Circuit 2 continuous cooling"
             },
             "target_temperature": {
                 "name": "Target temperature"
@@ -470,6 +467,9 @@
             },
             "min_setpoint_cooling": {
                 "name": "Min cooling setpoint"
+            },
+            "min_setpoint_cooling_limit": {
+                "name": "Min cooling setpoint limit"
             },
             "max_setpoint_cooling": {
                 "name": "Max cooling setpoint"

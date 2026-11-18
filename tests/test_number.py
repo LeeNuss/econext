@@ -276,7 +276,7 @@ class TestCircuitNumbers:
         """Test circuit number definitions are correct."""
         from custom_components.econext.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 14
+        assert len(CIRCUIT_NUMBERS) == 15
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
@@ -291,6 +291,7 @@ class TestCircuitNumbers:
             "curve_multiplier",
             "room_temp_correction",
             "min_setpoint_cooling",
+            "min_setpoint_cooling_limit",
             "max_setpoint_cooling",
             "cooling_fixed_temp",
         }
@@ -299,6 +300,16 @@ class TestCircuitNumbers:
         # All should be circuit device type
         for number in CIRCUIT_NUMBERS:
             assert number.device_type == DeviceType.CIRCUIT
+
+    def test_every_circuit_number_maps_to_a_parameter(self, coordinator: EconextCoordinator) -> None:
+        """A key missing from the mapping would silently drop the entity."""
+        from custom_components.econext.climate import CIRCUITS
+        from custom_components.econext.const import CIRCUIT_NUMBERS
+        from custom_components.econext.number import _get_circuit_param_id
+
+        for number in CIRCUIT_NUMBERS:
+            assert _get_circuit_param_id(CIRCUITS[2], number.key, coordinator), number.key
+        assert _get_circuit_param_id(CIRCUITS[2], "min_setpoint_cooling_limit", coordinator) == "1311"
 
     def test_circuit_comfort_temp_number(self, coordinator: EconextCoordinator) -> None:
         """Test circuit comfort temperature number."""

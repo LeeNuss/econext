@@ -64,7 +64,7 @@ def _demand_params() -> dict:
         C2.cooling_fixed_temp_param: 20,  # current target
         473: 0,  # setup params already at spec
         499: 5,
-        1311: 1,
+        C2.min_setpoint_cooling_limit_param: 7,
         1440: 85,  # pump speeds already at cooling values
         1441: 100,
     }
@@ -106,6 +106,14 @@ async def test_setup_params_asserted_when_drifted():
     await driver.async_tick(dt_util.now())
 
     assert ("473", 0) in coord.writes
+
+
+async def test_min_setpoint_cooling_limit_is_left_to_the_user():
+    """The controller used to force this to 1; it is a plain circuit setting."""
+    driver, coord = _driver(_demand_params(), dry_run=False)
+    await driver.async_tick(dt_util.now())
+
+    assert not any(w[0] == C2.min_setpoint_cooling_limit_param for w in coord.writes)
 
 
 async def test_preempt_tracked_even_when_dew_missing():
