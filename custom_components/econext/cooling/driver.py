@@ -29,7 +29,6 @@ from .const import (
     COOLING_MAX_PUMP_SPEED,
     COOLING_MIN_PUMP_SPEED,
     DEFAULTS,
-    MIN_SETPOINT_COOLING_LIMIT,
     MIN_TARGET_TEMP,
     PARAM_EPSILON,
     REG_COMP_HZ,
@@ -421,9 +420,6 @@ class CoolingDriver:
         """Idempotently assert the one-time HP setup params."""
         await self._assert_param(REG_HEAT_SOURCE_COOLING_HYST, 0, dry_run)
         await self._assert_param(REG_MIN_BREAK_TIME, 5, dry_run)
-        await self._assert_param(
-            self._circuit_cfg.min_setpoint_cooling_limit_param, MIN_SETPOINT_COOLING_LIMIT, dry_run
-        )
 
     async def _assert_pump_speeds(self, dry_run: bool) -> None:
         """Assert cooling pump speeds (max before min), season + work_mode gated."""
@@ -438,7 +434,7 @@ class CoolingDriver:
         await self._assert_param(REG_MAX_PUMP_SPEED, COOLING_MAX_PUMP_SPEED, dry_run)
         await self._assert_param(REG_MIN_PUMP_SPEED, COOLING_MIN_PUMP_SPEED, dry_run)
 
-    async def _assert_param(self, param_id: int | str, target: float, dry_run: bool) -> None:
+    async def _assert_param(self, param_id: int, target: float, dry_run: bool) -> None:
         """Write `target` to `param_id` only if it has drifted from spec."""
         current = self.coordinator.get_param_value(param_id)
         if current is not None:

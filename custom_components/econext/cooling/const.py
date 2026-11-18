@@ -40,12 +40,6 @@ SETUP_PARAMS: list[tuple[int, float]] = [
     (REG_MIN_BREAK_TIME, 5),
 ]
 
-# Value asserted on the cooling circuit's min cooling setpoint limit
-# (Circuit.min_setpoint_cooling_limit_param, factory 7). Kept at 1 since the
-# 2026-05-25 tests: at 7 a cooling run ended at target + hysteresis, at 2 the
-# heat pump kept modulating at minimum compressor speed instead.
-MIN_SETPOINT_COOLING_LIMIT = 1
-
 # Pump speeds during cooling (written via registers 1441 then 1440 — max
 # before min, since min cannot exceed the current max). Season + work_mode
 # gated so the DHW/season automations keep owning the heating value.
