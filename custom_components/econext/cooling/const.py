@@ -34,13 +34,17 @@ REG_MAX_PUMP_SPEED = 1441
 # cooling-cycle start. (register id, target value).
 REG_HEAT_SOURCE_COOLING_HYST = 473  # must be 0 for the dip-and-recover trick
 REG_MIN_BREAK_TIME = 499  # minutes
-REG_CIRCUIT2_COOLING_DOWN_RANGE = 1311  # circuit-2 continuous-cool flag
 
 SETUP_PARAMS: list[tuple[int, float]] = [
     (REG_HEAT_SOURCE_COOLING_HYST, 0),
-    (REG_CIRCUIT2_COOLING_DOWN_RANGE, 1),
     (REG_MIN_BREAK_TIME, 5),
 ]
+
+# Value asserted on the cooling circuit's min cooling setpoint limit
+# (Circuit.min_setpoint_cooling_limit_param, factory 7). Kept at 1 since the
+# 2026-05-25 tests: at 7 a cooling run ended at target + hysteresis, at 2 the
+# heat pump kept modulating at minimum compressor speed instead.
+MIN_SETPOINT_COOLING_LIMIT = 1
 
 # Pump speeds during cooling (written via registers 1441 then 1440 — max
 # before min, since min cannot exceed the current max). Season + work_mode

@@ -210,6 +210,7 @@ def _get_circuit_param_id(circuit, number_key: str, coordinator: EconextCoordina
         "curve_shift": circuit.curve_shift_param,
         "room_temp_correction": circuit.room_temp_correction_param,
         "min_setpoint_cooling": circuit.min_setpoint_cooling_param,
+        "min_setpoint_cooling_limit": circuit.min_setpoint_cooling_limit_param,
         "max_setpoint_cooling": circuit.max_setpoint_cooling_param,
         "cooling_fixed_temp": circuit.cooling_fixed_temp_param,
     }

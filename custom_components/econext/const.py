@@ -508,16 +508,6 @@ CONTROLLER_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         native_max_value=20,
         native_step=1,
     ),
-    # Circuit-2 continuous-cool flag (1 = continuous). Required by the
-    # cooling controller; circuit-2 scoped but exposed here for visibility.
-    EconextNumberEntityDescription(
-        key="circuit2_cooling_down_range",
-        param_id="1311",
-        icon="mdi:snowflake",
-        native_min_value=0,
-        native_max_value=1,
-        native_step=1,
-    ),
 )
 
 
@@ -1547,6 +1537,20 @@ CIRCUIT_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         icon="mdi:snowflake-thermometer",
         native_min_value=0,
         native_max_value=30,
+    ),
+    # Lowest value the controller accepts for the min cooling setpoint
+    # (CircuitNinSetTempCoolingDownRange). The allowed minimum of
+    # CircuitNMinSetPointCooling follows this value on every circuit: 7 on
+    # fan coil and radiator circuits, 18 was read on a UFH circuit.
+    EconextNumberEntityDescription(
+        key="min_setpoint_cooling_limit",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:snowflake-thermometer",
+        native_min_value=0,
+        native_max_value=30,
+        native_step=1,
     ),
     # Cooling max setpoint temperature
     EconextNumberEntityDescription(

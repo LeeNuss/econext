@@ -74,6 +74,9 @@ class Circuit:
     min_setpoint_cooling_param: str
     max_setpoint_cooling_param: str
     cooling_fixed_temp_param: str
+    # Lowest value the controller accepts for the min cooling setpoint
+    # (CircuitNinSetTempCoolingDownRange)
+    min_setpoint_cooling_limit_param: str
 
     # Boost
     boost_time_left_param: str
@@ -121,6 +124,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="903",
         max_setpoint_cooling_param="904",
         cooling_fixed_temp_param="739",
+        min_setpoint_cooling_limit_param="1310",
         boost_time_left_param="1432",
         schedule_sunday_am="247",
         schedule_sunday_pm="248",
@@ -162,6 +166,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="787",
         max_setpoint_cooling_param="788",
         cooling_fixed_temp_param="789",
+        min_setpoint_cooling_limit_param="1311",
         boost_time_left_param="1433",
         schedule_sunday_am="297",
         schedule_sunday_pm="298",
@@ -203,6 +208,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="837",
         max_setpoint_cooling_param="838",
         cooling_fixed_temp_param="839",
+        min_setpoint_cooling_limit_param="1312",
         boost_time_left_param="1434",
         schedule_sunday_am="881",
         schedule_sunday_pm="882",
@@ -244,6 +250,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="905",
         max_setpoint_cooling_param="906",
         cooling_fixed_temp_param="990",
+        min_setpoint_cooling_limit_param="1313",
         boost_time_left_param="1435",
         schedule_sunday_am="955",
         schedule_sunday_pm="956",
@@ -285,6 +292,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="907",
         max_setpoint_cooling_param="908",
         cooling_fixed_temp_param="1041",
+        min_setpoint_cooling_limit_param="1314",
         boost_time_left_param="1436",
         schedule_sunday_am="1006",
         schedule_sunday_pm="1007",
@@ -326,6 +334,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="909",
         max_setpoint_cooling_param="910",
         cooling_fixed_temp_param="784",
+        min_setpoint_cooling_limit_param="1315",
         boost_time_left_param="1437",
         schedule_sunday_am="867",
         schedule_sunday_pm="868",
@@ -367,6 +376,7 @@ CIRCUITS = {
         min_setpoint_cooling_param="911",
         max_setpoint_cooling_param="912",
         cooling_fixed_temp_param="834",
+        min_setpoint_cooling_limit_param="1316",
         boost_time_left_param="1438",
         schedule_sunday_am="845",
         schedule_sunday_pm="846",

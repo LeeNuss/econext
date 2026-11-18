@@ -43,6 +43,7 @@ CIRCUIT_FIELD_NAMES = {
     "min_setpoint_cooling_param": r"Circuit{n}MinSetPointCooling",
     "max_setpoint_cooling_param": r"Circuit{n}MaxSetPointCooling",
     "cooling_fixed_temp_param": r"Circuit{n}MixerCoolBaseTemp",
+    "min_setpoint_cooling_limit_param": r"Circuit{n}inSetTempCoolingDownRange",
     "boost_time_left_param": r"Circuit_{n}_boost_time_left",
 }
 SCHEDULE_FIELD = re.compile(r"schedule_(\w+day)_(am|pm)")
