@@ -16,6 +16,7 @@ This integration connects to an econext-gateway running on your local network, p
 - Select entities for operating modes and circuit types
 - Switch entities for enabling/disabling functions
 - Binary sensors for alarm states
+- Stale data protection: with a gateway that reports data readiness, a "Controller data" problem sensor turns on as soon as the controller restarts or stops answering, and entities turn unavailable when that lasts longer than two minutes, instead of showing old values as current
 - Button entities for heat pump commands
 - Virtual thermostat emulation (use HA temperature sensors as heat pump input)
 - Dew-safe UFH cooling controller (beta) — drives a fan-coil circuit's cooling cycle with condensation protection, using your dew-point sensor

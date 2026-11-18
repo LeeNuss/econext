@@ -1,5 +1,6 @@
 """API client for ecoNEXT (GM3 Gateway)."""
 
+from dataclasses import dataclass
 import logging
 from typing import Any
 
@@ -24,6 +25,20 @@ class EconextBatchUnsupportedError(EconextApiError):
 
 class EconextBatchRejectedError(EconextApiError):
     """The gateway rejected a batch before writing anything (unknown name or bad value)."""
+
+
+@dataclass(frozen=True)
+class ParametersReply:
+    """The parameters of the gateway and whether it vouches for them.
+
+    ``ready`` is False while the values are the last valid ones from before a
+    controller restart or silence, and ``ready_reason`` says why. Gateways
+    that do not report it are taken as ready.
+    """
+
+    params: dict[str, dict[str, Any]]
+    ready: bool = True
+    ready_reason: str = "ok"
 
 
 class EconextApi:
@@ -55,13 +70,18 @@ class EconextApi:
         return self._port
 
     async def async_fetch_all_params(self) -> dict[str, dict[str, Any]]:
-        """Fetch all parameters from the gateway.
+        """Fetch all parameters from the gateway, keyed by index (as string)."""
+        return (await self.async_fetch_parameters()).params
+
+    async def async_fetch_parameters(self) -> ParametersReply:
+        """Fetch all parameters from the gateway, with its data readiness.
 
         The gateway returns parameters already keyed by index (as string):
-            {"timestamp": "...", "parameters": {"0": {"index": 0, "name": "PS", "value": 42, ...}}}
+            {"timestamp": "...", "ready": true, "ready_reason": "ok",
+             "parameters": {"0": {"index": 0, "name": "PS", "value": 42, ...}}}
 
         Returns:
-            Dictionary of parameters keyed by index (as string).
+            The parameters keyed by index (as string) and the readiness.
 
         """
         url = f"{self._base_url}{API_ENDPOINT_PARAMETERS}"
@@ -93,7 +113,11 @@ class EconextApi:
             }
 
         _LOGGER.debug("Fetched %d parameters from gateway", len(params))
-        return params
+        return ParametersReply(
+            params=params,
+            ready=bool(data.get("ready", True)),
+            ready_reason=str(data.get("ready_reason", "ok")),
+        )
 
     async def async_fetch_alarms(self) -> list[dict[str, Any]]:
         """Fetch alarm history from the gateway.

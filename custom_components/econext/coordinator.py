@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
+from time import monotonic
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -18,7 +19,7 @@ from .api import (
     EconextBatchRejectedError,
     EconextBatchUnsupportedError,
 )
-from .const import CONF_THERMOSTAT_ENTITY, DOMAIN, UPDATE_INTERVAL, WRITE_COALESCE_SECONDS
+from .const import CONF_THERMOSTAT_ENTITY, DATA_NOT_READY_GRACE, DOMAIN, UPDATE_INTERVAL, WRITE_COALESCE_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,13 +69,20 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # async_setup_entry before the platforms load, so sub-devices can
         # reference it via `via_device_id`.
         self.main_device_id: str | None = None
+        # Data readiness as the gateway reports it with every parameters
+        # reply. Not ready means the values are the last valid ones from
+        # before a controller restart or silence, not current measurements.
+        self.data_ready = True
+        self.ready_reason = "ok"
+        self._not_ready_since: float | None = None
 
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Fetch data from the API."""
         try:
-            params = await self.api.async_fetch_all_params()
+            reply = await self.api.async_fetch_parameters()
         except EconextApiError as err:
             raise UpdateFailed(f"Error fetching data: {err}") from err
+        params = reply.params
 
         if not params:
             # A gateway that has just started has nothing cached yet. Failing
@@ -87,6 +95,7 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             # "unknown" and leaves those behind once the UID shows up.
             raise UpdateFailed("Gateway has not reported the controller UID yet")
         self._check_late_parameters(len(params))
+        self._note_readiness(reply.ready, reply.ready_reason)
 
         # Fetch alarms (non-fatal - alarms are secondary to parameters)
         try:
@@ -103,14 +112,41 @@ class EconextCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         except Exception:
             _LOGGER.debug("Failed to fetch thermostat status")
 
-        # Run the cooling controller tick (non-fatal — must never break the poll)
+        # Run the cooling controller tick (non-fatal — must never break the poll).
+        # Not on data that is not ready: it would decide on old temperatures.
         if self.cooling_driver is not None:
-            try:
-                await self.cooling_driver.async_tick(dt_util.now())
-            except Exception:
-                _LOGGER.exception("Cooling controller tick failed")
+            if not self.data_ready:
+                _LOGGER.debug("Cooling controller tick skipped: gateway data not ready (%s)", self.ready_reason)
+            else:
+                try:
+                    await self.cooling_driver.async_tick(dt_util.now())
+                except Exception:
+                    _LOGGER.exception("Cooling controller tick failed")
 
         return params
+
+    def _note_readiness(self, ready: bool, reason: str) -> None:
+        """Take over the gateway's data readiness and log each change once."""
+        if ready:
+            if not self.data_ready:
+                _LOGGER.info("Gateway data ready again")
+            self._not_ready_since = None
+        elif self.data_ready:
+            self._not_ready_since = monotonic()
+            _LOGGER.warning("Gateway data not ready: %s (keeping the last valid values)", reason)
+        self.data_ready = ready
+        self.ready_reason = reason
+
+    @property
+    def values_current(self) -> bool:
+        """False once the data has been not ready for longer than the grace.
+
+        Until then entities keep showing the last valid values: a single
+        discarded poll clears within seconds and must not make them flicker.
+        """
+        if self._not_ready_since is None:
+            return True
+        return monotonic() - self._not_ready_since < DATA_NOT_READY_GRACE
 
     def mark_entities_created(self) -> None:
         """Record how many parameters the entity platforms were built from."""

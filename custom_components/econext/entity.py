@@ -121,8 +121,12 @@ class EconextEntity(CoordinatorEntity[EconextCoordinator]):
 
     @property
     def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success and self._is_value_valid()
+        """Return if entity is available.
+
+        Not while the gateway has reported its data as not ready for longer
+        than the grace: the value would be an old one shown as current.
+        """
+        return self.coordinator.last_update_success and self.coordinator.values_current and self._is_value_valid()
 
     def _is_value_valid(self) -> bool:
         """Check if the parameter value is valid.

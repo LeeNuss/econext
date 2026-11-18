@@ -48,6 +48,13 @@ API_ENDPOINT_ALARMS = "/api/alarms"
 # Update interval in seconds
 UPDATE_INTERVAL = 10
 
+# The gateway flags its data as not ready after a controller restart or while
+# the controller does not answer, and keeps serving the last valid values.
+# Entities stay available for this many seconds of that, so a single discarded
+# poll (about ten seconds) does not make them flicker. It has to stay below the
+# five minutes after which the gateway accepts a lasting cause as normal.
+DATA_NOT_READY_GRACE = 120
+
 # Writes requested within this window are sent to the gateway as one batch
 # (one bus token hold). Long enough to catch service calls fired together,
 # e.g. a schedule card copying a day, short enough to be unnoticeable.

@@ -40,6 +40,36 @@ class TestEconextApi:
         assert api._base_url == "http://192.168.1.100:9000"
 
 
+class TestFetchParameters:
+    """Test the readiness that comes with the parameters."""
+
+    @staticmethod
+    def _api(mock_session: MagicMock, body: dict) -> EconextApi:
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json = AsyncMock(return_value=body)
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+        mock_session.get = MagicMock(return_value=mock_response)
+        return EconextApi(host="192.168.1.100", port=8000, session=mock_session)
+
+    PARAMETERS = {"61": {"index": 61, "name": "TempCWU", "value": 40.0}}
+
+    @pytest.mark.asyncio
+    async def test_not_ready_reply(self, mock_session: MagicMock) -> None:
+        body = {"ready": False, "ready_reason": "TempCWU reads 0", "parameters": self.PARAMETERS}
+        reply = await self._api(mock_session, body).async_fetch_parameters()
+
+        assert (reply.ready, reply.ready_reason) == (False, "TempCWU reads 0")
+        assert reply.params["61"]["value"] == 40.0
+
+    @pytest.mark.asyncio
+    async def test_gateway_that_does_not_report_readiness_is_ready(self, mock_session: MagicMock) -> None:
+        reply = await self._api(mock_session, {"parameters": self.PARAMETERS}).async_fetch_parameters()
+
+        assert (reply.ready, reply.ready_reason) == (True, "ok")
+
+
 class TestFetchAllParams:
     """Test the async_fetch_all_params method."""
 

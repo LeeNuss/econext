@@ -59,6 +59,9 @@
             "alarm_active": {
                 "name": "Alarm active"
             },
+            "controller_data": {
+                "name": "Controller data"
+            },
             "cooling_hp_quiet": {
                 "name": "HP quiet"
             },

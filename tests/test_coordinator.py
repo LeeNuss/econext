@@ -11,7 +11,9 @@ from custom_components.econext.api import (
     EconextApiError,
     EconextBatchRejectedError,
     EconextBatchUnsupportedError,
+    ParametersReply,
 )
+from custom_components.econext.const import DATA_NOT_READY_GRACE
 from custom_components.econext.coordinator import EconextCoordinator
 
 
@@ -59,18 +61,18 @@ class TestAsyncUpdateData:
         all_params_parsed: dict,
     ) -> None:
         """Test successful data update."""
-        mock_api.async_fetch_all_params = AsyncMock(return_value=all_params_parsed)
+        mock_api.async_fetch_parameters = AsyncMock(return_value=ParametersReply(all_params_parsed))
 
         coordinator = EconextCoordinator(mock_hass, mock_api)
         result = await coordinator._async_update_data()
 
         assert result == all_params_parsed
-        mock_api.async_fetch_all_params.assert_called_once()
+        mock_api.async_fetch_parameters.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_update_data_api_error(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
         """Test that API errors are wrapped in UpdateFailed."""
-        mock_api.async_fetch_all_params = AsyncMock(side_effect=EconextApiError("Connection failed"))
+        mock_api.async_fetch_parameters = AsyncMock(side_effect=EconextApiError("Connection failed"))
 
         coordinator = EconextCoordinator(mock_hass, mock_api)
 
@@ -350,7 +352,7 @@ class TestStartupParameters:
 
     @pytest.mark.asyncio
     async def test_empty_parameter_set_fails_update(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
-        mock_api.async_fetch_all_params = AsyncMock(return_value={})
+        mock_api.async_fetch_parameters = AsyncMock(return_value=ParametersReply({}))
         coordinator = EconextCoordinator(mock_hass, mock_api)
 
         with pytest.raises(UpdateFailed, match="no parameters"):
@@ -358,7 +360,9 @@ class TestStartupParameters:
 
     @pytest.mark.asyncio
     async def test_missing_uid_fails_first_update(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
-        mock_api.async_fetch_all_params = AsyncMock(return_value={"0": {"name": "PS", "value": "1.0"}})
+        mock_api.async_fetch_parameters = AsyncMock(
+            return_value=ParametersReply({"0": {"name": "PS", "value": "1.0"}})
+        )
         coordinator = EconextCoordinator(mock_hass, mock_api)
 
         with pytest.raises(UpdateFailed, match="UID"):
@@ -397,3 +401,82 @@ class TestStartupParameters:
         coordinator._check_late_parameters(500)
 
         mock_hass.config_entries.async_schedule_reload.assert_not_called()
+
+
+class TestDataReadiness:
+    """The gateway says whether its values are current (ready, ready_reason)."""
+
+    PARAMS = {"10": {"name": "UID", "value": "ABC"}, "61": {"name": "TempCWU", "value": 40.0}}
+    RESET = "controller reset (counter 58 to 59)"
+
+    def _coordinator(self, mock_hass: MagicMock, mock_api: MagicMock) -> EconextCoordinator:
+        mock_api.async_fetch_alarms = AsyncMock(return_value=[])
+        mock_api.async_get_thermostat_status = AsyncMock(return_value=None)
+        return EconextCoordinator(mock_hass, mock_api)
+
+    def _reply(self, mock_api: MagicMock, ready: bool, reason: str = "ok") -> None:
+        mock_api.async_fetch_parameters = AsyncMock(return_value=ParametersReply(self.PARAMS, ready, reason))
+
+    @pytest.mark.asyncio
+    async def test_ready_by_default_and_while_the_gateway_says_so(self, mock_hass: MagicMock, mock_api: MagicMock) -> None:
+        coordinator = self._coordinator(mock_hass, mock_api)
+        assert (coordinator.data_ready, coordinator.ready_reason, coordinator.values_current) == (True, "ok", True)
+
+        self._reply(mock_api, True)
+        await coordinator._async_update_data()
+        assert (coordinator.data_ready, coordinator.ready_reason, coordinator.values_current) == (True, "ok", True)
+
+    @pytest.mark.asyncio
+    async def test_not_ready_keeps_the_values_for_the_grace_then_they_are_not_current(
+        self, mock_hass: MagicMock, mock_api: MagicMock
+    ) -> None:
+        coordinator = self._coordinator(mock_hass, mock_api)
+        self._reply(mock_api, False, self.RESET)
+        with patch("custom_components.econext.coordinator.monotonic", return_value=1000.0):
+            params = await coordinator._async_update_data()
+            assert params == self.PARAMS  # the last valid values are still served
+            assert (coordinator.data_ready, coordinator.ready_reason) == (False, self.RESET)
+            assert coordinator.values_current is True
+
+        with patch("custom_components.econext.coordinator.monotonic", return_value=1000.0 + DATA_NOT_READY_GRACE - 1):
+            await coordinator._async_update_data()  # still not ready: the clock is not started again
+            assert coordinator.values_current is True
+        with patch("custom_components.econext.coordinator.monotonic", return_value=1000.0 + DATA_NOT_READY_GRACE):
+            assert coordinator.values_current is False
+
+            self._reply(mock_api, True)
+            await coordinator._async_update_data()
+            assert (coordinator.data_ready, coordinator.values_current) == (True, True)
+
+    @pytest.mark.asyncio
+    async def test_one_log_line_per_change(self, mock_hass: MagicMock, mock_api: MagicMock, caplog) -> None:
+        caplog.set_level("INFO", logger="custom_components.econext.coordinator")
+        coordinator = self._coordinator(mock_hass, mock_api)
+        self._reply(mock_api, False, self.RESET)
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+        self._reply(mock_api, True)
+        await coordinator._async_update_data()
+        await coordinator._async_update_data()
+
+        messages = [r.getMessage() for r in caplog.records if "Gateway data" in r.getMessage()]
+        assert messages == [
+            f"Gateway data not ready: {self.RESET} (keeping the last valid values)",
+            "Gateway data ready again",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_cooling_controller_does_not_tick_on_data_that_is_not_ready(
+        self, mock_hass: MagicMock, mock_api: MagicMock
+    ) -> None:
+        coordinator = self._coordinator(mock_hass, mock_api)
+        coordinator.cooling_driver = MagicMock()
+        coordinator.cooling_driver.async_tick = AsyncMock()
+
+        self._reply(mock_api, False, self.RESET)
+        await coordinator._async_update_data()
+        coordinator.cooling_driver.async_tick.assert_not_awaited()  # at once, without the grace
+
+        self._reply(mock_api, True)
+        await coordinator._async_update_data()
+        coordinator.cooling_driver.async_tick.assert_awaited_once()

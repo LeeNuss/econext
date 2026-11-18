@@ -5,6 +5,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -22,7 +23,10 @@ async def async_setup_entry(
     """Set up ecoNEXT binary sensor entities from a config entry."""
     coordinator: EconextCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
-    entities: list[BinarySensorEntity] = [EconextAlarmActiveBinarySensor(coordinator)]
+    entities: list[BinarySensorEntity] = [
+        EconextAlarmActiveBinarySensor(coordinator),
+        EconextDataProblemBinarySensor(coordinator),
+    ]
     entities.extend(build_cooling_binary_sensors(coordinator))
     async_add_entities(entities)
 
@@ -58,3 +62,38 @@ class EconextAlarmActiveBinarySensor(EconextEntity, BinarySensorEntity):
     def _is_value_valid(self) -> bool:
         """Alarm data is always valid if coordinator is updating."""
         return True
+
+
+class EconextDataProblemBinarySensor(EconextEntity, BinarySensorEntity):
+    """On while the gateway does not vouch for its values.
+
+    That is after a controller restart or while the controller does not
+    answer. The other entities then keep the last valid values and turn
+    unavailable when it lasts; this one says so at once, with the reason.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "controller_data"
+
+    def __init__(self, coordinator: EconextCoordinator) -> None:
+        """Initialize the data problem binary sensor."""
+        # Sentinel param_id: this entity reads the readiness, not a parameter
+        super().__init__(coordinator, "_data_ready", None)
+        uid = coordinator.get_device_uid()
+        self._attr_unique_id = f"{uid}_controller_data"
+
+    @property
+    def is_on(self) -> bool:
+        """Return True while the data is not ready."""
+        return not self.coordinator.data_ready
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return why the data is not ready, or "ok"."""
+        return {"reason": self.coordinator.ready_reason}
+
+    @property
+    def available(self) -> bool:
+        """Stay available while the data is not ready: that is what it reports."""
+        return self.coordinator.last_update_success
