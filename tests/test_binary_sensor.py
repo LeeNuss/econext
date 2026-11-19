@@ -4,7 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from custom_components.econext.binary_sensor import EconextAlarmActiveBinarySensor
+from custom_components.econext.binary_sensor import EconextAlarmActiveBinarySensor, EconextDataProblemBinarySensor
+from custom_components.econext.const import DATA_NOT_READY_GRACE
+from custom_components.econext.entity import EconextEntity
 from custom_components.econext.coordinator import EconextCoordinator
 
 
@@ -120,3 +122,41 @@ class TestAlarmActiveBinarySensor:
         sensor = EconextAlarmActiveBinarySensor(coordinator)
 
         assert sensor._is_value_valid() is True
+
+
+class TestDataProblemBinarySensor:
+    """The gateway does not vouch for its values (controller restart or silence)."""
+
+    def test_off_while_the_data_is_ready(self, coordinator: EconextCoordinator) -> None:
+        sensor = EconextDataProblemBinarySensor(coordinator)
+
+        assert sensor.is_on is False
+        assert sensor.extra_state_attributes == {"reason": "ok"}
+        assert sensor.unique_id == f"{coordinator.get_device_uid()}_controller_data"
+
+    def test_on_at_once_with_the_reason_and_stays_available(self, coordinator: EconextCoordinator) -> None:
+        coordinator._note_readiness(False, "controller reset (counter 58 to 59)")
+        sensor = EconextDataProblemBinarySensor(coordinator)
+
+        assert sensor.is_on is True
+        assert sensor.extra_state_attributes == {"reason": "controller reset (counter 58 to 59)"}
+        with patch("custom_components.econext.coordinator.monotonic", return_value=1e9):
+            assert sensor.available is True  # long past the grace: it is the one that reports it
+
+
+class TestAvailabilityWhileNotReady:
+    """Value entities keep the last valid value for the grace, then turn unavailable."""
+
+    def test_entity_turns_unavailable_after_the_grace_and_comes_back(self, coordinator: EconextCoordinator) -> None:
+        entity = EconextEntity(coordinator, "10")
+        assert entity.available is True
+
+        with patch("custom_components.econext.coordinator.monotonic", return_value=500.0):
+            coordinator._note_readiness(False, "no valid poll for 48 s")
+            assert entity.available is True
+        with patch("custom_components.econext.coordinator.monotonic", return_value=500.0 + DATA_NOT_READY_GRACE - 1):
+            assert entity.available is True
+        with patch("custom_components.econext.coordinator.monotonic", return_value=500.0 + DATA_NOT_READY_GRACE):
+            assert entity.available is False
+            coordinator._note_readiness(True, "ok")
+            assert entity.available is True
