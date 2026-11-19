@@ -62,6 +62,7 @@ class Circuit:
     hysteresis_param: str
     max_temp_radiator_param: str
     max_temp_heat_param: str
+    max_temp_heat_hysteresis_param: str
     fixed_temp_param: str
     temp_reduction_param: str
     curve_multiplier_param: str
@@ -115,6 +116,7 @@ CIRCUITS = {
         hysteresis_param="240",
         max_temp_radiator_param="242",
         max_temp_heat_param="243",
+        max_temp_heat_hysteresis_param="244",
         fixed_temp_param="261",
         temp_reduction_param="262",
         curve_multiplier_param="263",
@@ -158,6 +160,7 @@ CIRCUITS = {
         hysteresis_param="290",
         max_temp_radiator_param="292",
         max_temp_heat_param="293",
+        max_temp_heat_hysteresis_param="294",
         fixed_temp_param="311",
         temp_reduction_param="312",
         curve_multiplier_param="313",
@@ -201,6 +204,7 @@ CIRCUITS = {
         hysteresis_param="340",
         max_temp_radiator_param="342",
         max_temp_heat_param="343",
+        max_temp_heat_hysteresis_param="344",
         fixed_temp_param="361",
         temp_reduction_param="362",
         curve_multiplier_param="363",
@@ -244,6 +248,7 @@ CIRCUITS = {
         hysteresis_param="948",
         max_temp_radiator_param="950",
         max_temp_heat_param="951",
+        max_temp_heat_hysteresis_param="952",
         fixed_temp_param="969",
         temp_reduction_param="970",
         curve_multiplier_param="971",
@@ -287,6 +292,7 @@ CIRCUITS = {
         hysteresis_param="999",
         max_temp_radiator_param="1001",
         max_temp_heat_param="1002",
+        max_temp_heat_hysteresis_param="1003",
         fixed_temp_param="1020",
         temp_reduction_param="1021",
         curve_multiplier_param="1022",
@@ -330,6 +336,7 @@ CIRCUITS = {
         hysteresis_param="757",
         max_temp_radiator_param="759",
         max_temp_heat_param="760",
+        max_temp_heat_hysteresis_param="761",
         fixed_temp_param="763",
         temp_reduction_param="764",
         curve_multiplier_param="765",
@@ -373,6 +380,7 @@ CIRCUITS = {
         hysteresis_param="807",
         max_temp_radiator_param="809",
         max_temp_heat_param="810",
+        max_temp_heat_hysteresis_param="811",
         fixed_temp_param="813",
         temp_reduction_param="814",
         curve_multiplier_param="815",

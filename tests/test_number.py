@@ -276,7 +276,7 @@ class TestCircuitNumbers:
         """Test circuit number definitions are correct."""
         from custom_components.econext.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 15
+        assert len(CIRCUIT_NUMBERS) == 16
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
@@ -284,6 +284,7 @@ class TestCircuitNumbers:
             "hysteresis",
             "max_temp_radiator",
             "max_temp_heat",
+            "max_temp_heat_hysteresis",
             "fixed_temp",
             "temp_reduction",
             "heating_curve",
@@ -310,6 +311,7 @@ class TestCircuitNumbers:
         for number in CIRCUIT_NUMBERS:
             assert _get_circuit_param_id(CIRCUITS[2], number.key, coordinator), number.key
         assert _get_circuit_param_id(CIRCUITS[2], "min_setpoint_cooling_limit", coordinator) == "1311"
+        assert _get_circuit_param_id(CIRCUITS[2], "max_temp_heat_hysteresis", coordinator) == "294"
 
     def test_circuit_comfort_temp_number(self, coordinator: EconextCoordinator) -> None:
         """Test circuit comfort temperature number."""

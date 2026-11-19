@@ -204,6 +204,7 @@ def _get_circuit_param_id(circuit, number_key: str, coordinator: EconextCoordina
         "hysteresis": circuit.hysteresis_param,
         "max_temp_radiator": circuit.max_temp_radiator_param,
         "max_temp_heat": circuit.max_temp_heat_param,
+        "max_temp_heat_hysteresis": circuit.max_temp_heat_hysteresis_param,
         "fixed_temp": circuit.fixed_temp_param,
         "temp_reduction": circuit.temp_reduction_param,
         "curve_multiplier": circuit.curve_multiplier_param,

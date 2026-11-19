@@ -1485,6 +1485,16 @@ CIRCUIT_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         native_min_value=30,
         native_max_value=55,
     ),
+    # Hysteresis of the max heating temperature (CircuitNMaxTempHeatHist)
+    EconextNumberEntityDescription(
+        key="max_temp_heat_hysteresis",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-lines",
+        native_min_value=0,
+        native_max_value=10,
+    ),
     # Fixed temperature
     EconextNumberEntityDescription(
         key="fixed_temp",

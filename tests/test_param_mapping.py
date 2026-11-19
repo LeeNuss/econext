@@ -32,6 +32,7 @@ CIRCUIT_FIELD_NAMES = {
     "hysteresis_param": r"Circuit{n}DownHist",
     "max_temp_radiator_param": r"Circuit{n}MaxSetTemp(Rad)?",
     "max_temp_heat_param": r"Circuit{n}MaxTempHeat",
+    "max_temp_heat_hysteresis_param": r"Circuit{n}MaxTempHeatHist",
     "fixed_temp_param": r"Circuit{n}BaseTemp",
     "temp_reduction_param": r"Circuit{n}TempReduction",
     "curve_multiplier_param": r"Circuit{n}Multiplier",
