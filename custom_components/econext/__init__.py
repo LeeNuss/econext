@@ -27,6 +27,7 @@ from .cooling.driver import CoolingDriver
 from .cooling.migrate import (
     async_ensure_fan_coil,
     async_migrate_heating_curve_unique_ids,
+    async_migrate_max_setpoint_heating_unique_ids,
     async_migrate_min_setpoint_cooling_limit_unique_id,
 )
 from .coordinator import EconextCoordinator
@@ -98,6 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EconextConfigEntry) -> b
     # Rename legacy param-id-based heating_curve unique_ids before platforms
     # re-create entities under the new stable form.
     async_migrate_heating_curve_unique_ids(hass, entry)
+    async_migrate_max_setpoint_heating_unique_ids(hass, entry)
     async_migrate_min_setpoint_cooling_limit_unique_id(hass, entry)
 
     # Register the main controller device before the platforms load, so

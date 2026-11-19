@@ -276,13 +276,14 @@ class TestCircuitNumbers:
         """Test circuit number definitions are correct."""
         from custom_components.econext.const import CIRCUIT_NUMBERS, DeviceType
 
-        assert len(CIRCUIT_NUMBERS) == 16
+        assert len(CIRCUIT_NUMBERS) == 17
         keys = {n.key for n in CIRCUIT_NUMBERS}
         expected_keys = {
             "comfort_temp",
             "eco_temp",
             "hysteresis",
-            "max_temp_radiator",
+            "min_setpoint_heating",
+            "max_setpoint_heating",
             "max_temp_heat",
             "max_temp_heat_hysteresis",
             "fixed_temp",
@@ -312,6 +313,41 @@ class TestCircuitNumbers:
             assert _get_circuit_param_id(CIRCUITS[2], number.key, coordinator), number.key
         assert _get_circuit_param_id(CIRCUITS[2], "min_setpoint_cooling_limit", coordinator) == "1311"
         assert _get_circuit_param_id(CIRCUITS[2], "max_temp_heat_hysteresis", coordinator) == "294"
+
+    @pytest.mark.parametrize(
+        ("circuit_type", "minimum", "maximum"),
+        [(1, "291", "292"), (2, "321", "322"), (3, "291", "292"), (None, "291", "292")],
+        ids=["radiator", "ufh", "fan_coil", "unknown"],
+    )
+    def test_heating_setpoint_limits_follow_the_circuit_type(
+        self, coordinator: EconextCoordinator, circuit_type, minimum, maximum
+    ) -> None:
+        """UFH circuits are limited by the floor pair, the other types by the radiator pair."""
+        from custom_components.econext.climate import CIRCUITS
+        from custom_components.econext.number import _get_circuit_param_id
+
+        circuit = CIRCUITS[2]
+        coordinator.data[circuit.type_settings_param]["value"] = circuit_type
+
+        assert _get_circuit_param_id(circuit, "min_setpoint_heating", coordinator) == minimum
+        assert _get_circuit_param_id(circuit, "max_setpoint_heating", coordinator) == maximum
+
+    def test_heating_setpoint_limits_keep_their_unique_id_across_types(self, coordinator: EconextCoordinator) -> None:
+        """A type change swaps the register, not the entity."""
+        from custom_components.econext.const import CIRCUIT_NUMBERS
+
+        for key, params in (("min_setpoint_heating", ("291", "321")), ("max_setpoint_heating", ("292", "322"))):
+            description = next(n for n in CIRCUIT_NUMBERS if n.key == key)
+            unique_ids = {
+                EconextNumber(
+                    coordinator,
+                    EconextNumberEntityDescription(key=key, param_id=param, unique_id_key=description.unique_id_key),
+                    device_id="circuit_2",
+                ).unique_id
+                for param in params
+            }
+            assert len(unique_ids) == 1
+            assert unique_ids.pop().endswith(f"_circuit_2_{key}")
 
     def test_circuit_comfort_temp_number(self, coordinator: EconextCoordinator) -> None:
         """Test circuit comfort temperature number."""

@@ -125,6 +125,26 @@ def async_migrate_min_setpoint_cooling_limit_unique_id(hass, entry) -> None:
     _rename_unique_ids(hass, entry, old_to_new, "min_setpoint_cooling_limit")
 
 
+def async_migrate_max_setpoint_heating_unique_ids(hass, entry) -> None:
+    """Rename the "max radiator temperature" numbers to the max heating setpoint.
+
+    The number used to be bound to CircuitNMaxSetTempRad with unique_id
+    `<uid>_circuit_N_<param>`. It now follows the circuit type (the floor
+    limit on UFH circuits) under the stable `<uid>_circuit_N_max_setpoint_heating`.
+    Renaming the registry entry keeps the entity_id and history. Safe to call
+    every setup.
+    """
+    uid = entry.runtime_data.get_device_uid()
+    if not uid or uid == "unknown":
+        return
+
+    old_to_new = {
+        f"{uid}_circuit_{n}_{cfg.max_temp_radiator_param}": (f"{uid}_circuit_{n}_max_setpoint_heating", n)
+        for n, cfg in CIRCUITS.items()
+    }
+    _rename_unique_ids(hass, entry, old_to_new, "max_setpoint_heating")
+
+
 def _rename_unique_ids(hass, entry, old_to_new: dict[str, tuple[str, int]], what: str) -> None:
     """Rename registry entries from old to new unique_ids, dropping duplicates."""
     reg = er.async_get(hass)

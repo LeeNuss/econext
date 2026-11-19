@@ -447,8 +447,11 @@
             "eco_temp": {
                 "name": "Eco temperature"
             },
-            "max_temp_radiator": {
-                "name": "Max radiator temperature"
+            "min_setpoint_heating": {
+                "name": "Min heating setpoint"
+            },
+            "max_setpoint_heating": {
+                "name": "Max heating setpoint"
             },
             "max_temp_heat": {
                 "name": "Max heating temperature"

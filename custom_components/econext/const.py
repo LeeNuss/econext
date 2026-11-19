@@ -1465,15 +1465,28 @@ CIRCUIT_NUMBERS: tuple[EconextNumberEntityDescription, ...] = (
         native_max_value=5.0,
         native_step=0.5,
     ),
-    # Max radiator temperature
+    # Limits of the flow setpoint. The register follows the circuit type:
+    # CircuitNMin/MaxSetTempFloor on UFH circuits, CircuitNMin/MaxSetTempRad
+    # on radiator and fan coil circuits.
     EconextNumberEntityDescription(
-        key="max_temp_radiator",
-        param_id="",  # Set dynamically per circuit
+        key="min_setpoint_heating",
+        param_id="",  # Set dynamically per circuit type
+        device_type=DeviceType.CIRCUIT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-low",
+        native_min_value=24,
+        native_max_value=75,
+        unique_id_key="min_setpoint_heating",
+    ),
+    EconextNumberEntityDescription(
+        key="max_setpoint_heating",
+        param_id="",  # Set dynamically per circuit type
         device_type=DeviceType.CIRCUIT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer-high",
-        native_min_value=0,
+        native_min_value=24,
         native_max_value=75,
+        unique_id_key="max_setpoint_heating",
     ),
     # Max heating temperature
     EconextNumberEntityDescription(
