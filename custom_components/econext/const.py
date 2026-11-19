@@ -1384,6 +1384,17 @@ CIRCUIT_SENSORS: tuple[EconextSensorEntityDescription, ...] = (
         icon="mdi:thermometer-auto",
         precision=1,
     ),
+    # Circuit flow sensor (H2-S, H3-S, ...), not present on circuit 1
+    EconextSensorEntityDescription(
+        key="flow_temp",
+        param_id="",  # Set dynamically per circuit
+        device_type=DeviceType.CIRCUIT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        icon="mdi:thermometer-water",
+        precision=1,
+    ),
     # Room temperature setpoint
     EconextSensorEntityDescription(
         key="room_temp_setpoint",

@@ -27,6 +27,7 @@ CIRCUIT_FIELD_NAMES = {
     "comfort_param": r"Circuit{n}ComfortTemp",
     "eco_param": r"Circuit{n}EcoTemp",
     "calc_temp_param": r"Circuit{n}CalcTemp",
+    "flow_temp_param": r"TempCircuit{n}",
     "room_temp_setpoint_param": r"Circuit{n}_romTempSet",
     "hysteresis_param": r"Circuit{n}DownHist",
     "max_temp_radiator_param": r"Circuit{n}MaxSetTemp(Rad)?",
@@ -61,6 +62,8 @@ def test_circuit_params_point_at_their_circuit(number, names):
     wrong = []
     for field in dataclasses.fields(circuit):
         index = getattr(circuit, field.name)
+        if index is None:  # parameter does not exist for this circuit
+            continue
         name = names.get(index)
         if schedule := SCHEDULE_FIELD.fullmatch(field.name):
             day, half = schedule.groups()

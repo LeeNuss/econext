@@ -195,6 +195,9 @@
             "calc_temp": {
                 "name": "Calculated temperature"
             },
+            "flow_temp": {
+                "name": "Flow temperature"
+            },
             "room_temp_setpoint": {
                 "name": "Room temperature setpoint"
             },
