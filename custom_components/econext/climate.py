@@ -54,6 +54,8 @@ class Circuit:
 
     # Temperature sensors
     calc_temp_param: str
+    # Circuit flow sensor (H2-S, H3-S, ...); circuit 1 has none
+    flow_temp_param: str | None
     room_temp_setpoint_param: str
 
     # Settings
@@ -108,6 +110,7 @@ CIRCUITS = {
         comfort_param="238",
         eco_param="239",
         calc_temp_param="237",
+        flow_temp_param=None,
         room_temp_setpoint_param="91",
         hysteresis_param="240",
         max_temp_radiator_param="242",
@@ -150,6 +153,7 @@ CIRCUITS = {
         comfort_param="288",
         eco_param="289",
         calc_temp_param="287",
+        flow_temp_param="66",
         room_temp_setpoint_param="92",
         hysteresis_param="290",
         max_temp_radiator_param="292",
@@ -192,6 +196,7 @@ CIRCUITS = {
         comfort_param="338",
         eco_param="339",
         calc_temp_param="337",
+        flow_temp_param="67",
         room_temp_setpoint_param="93",
         hysteresis_param="340",
         max_temp_radiator_param="342",
@@ -234,6 +239,7 @@ CIRCUITS = {
         comfort_param="946",
         eco_param="947",
         calc_temp_param="945",
+        flow_temp_param="70",
         room_temp_setpoint_param="94",
         hysteresis_param="948",
         max_temp_radiator_param="950",
@@ -276,6 +282,7 @@ CIRCUITS = {
         comfort_param="997",
         eco_param="998",
         calc_temp_param="996",
+        flow_temp_param="71",
         room_temp_setpoint_param="95",
         hysteresis_param="999",
         max_temp_radiator_param="1001",
@@ -318,6 +325,7 @@ CIRCUITS = {
         comfort_param="755",
         eco_param="756",
         calc_temp_param="754",
+        flow_temp_param="72",
         room_temp_setpoint_param="96",
         hysteresis_param="757",
         max_temp_radiator_param="759",
@@ -360,6 +368,7 @@ CIRCUITS = {
         comfort_param="805",
         eco_param="806",
         calc_temp_param="804",
+        flow_temp_param="73",
         room_temp_setpoint_param="97",
         hysteresis_param="807",
         max_temp_radiator_param="809",

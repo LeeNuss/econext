@@ -459,13 +459,20 @@ class TestCircuitSensors:
         """Test circuit sensor definitions are correct."""
         from custom_components.econext.const import CIRCUIT_SENSORS
 
-        assert len(CIRCUIT_SENSORS) == 5
+        assert len(CIRCUIT_SENSORS) == 6
         keys = {s.key for s in CIRCUIT_SENSORS}
-        assert keys == {"thermostat_temp", "calc_temp", "room_temp_setpoint", "active_preset_mode", "boost_time_remaining"}
+        assert keys == {
+            "thermostat_temp",
+            "calc_temp",
+            "flow_temp",
+            "room_temp_setpoint",
+            "active_preset_mode",
+            "boost_time_remaining",
+        }
 
         # Temperature sensors should have correct attributes
         temp_sensors = [s for s in CIRCUIT_SENSORS if s.device_class == SensorDeviceClass.TEMPERATURE]
-        assert len(temp_sensors) == 3
+        assert len(temp_sensors) == 4
         for sensor in temp_sensors:
             assert sensor.state_class == SensorStateClass.MEASUREMENT
             assert sensor.native_unit_of_measurement == UnitOfTemperature.CELSIUS
@@ -511,6 +518,33 @@ class TestCircuitSensors:
         # From fixture, param 287 = 35.92, rounded to 35.9 with precision=1
         assert sensor.native_value == 35.9
         assert sensor._attr_icon == "mdi:thermometer-auto"
+
+    def test_circuit_flow_temp_param_mapping(self) -> None:
+        """Circuits 2-7 read their own flow sensor, circuit 1 has none."""
+        from custom_components.econext.climate import CIRCUITS
+        from custom_components.econext.sensor import _get_circuit_param_id
+
+        assert _get_circuit_param_id(CIRCUITS[1], "flow_temp") is None
+        assert _get_circuit_param_id(CIRCUITS[2], "flow_temp") == "66"
+        assert _get_circuit_param_id(CIRCUITS[3], "flow_temp") == "67"
+
+    def test_circuit_flow_temp_sensor(self, coordinator: EconextCoordinator) -> None:
+        """Test circuit flow temperature sensor."""
+        description = EconextSensorEntityDescription(
+            key="flow_temp",
+            param_id="66",  # TempCircuit2
+            device_type=DeviceType.CIRCUIT,
+            device_class=SensorDeviceClass.TEMPERATURE,
+            state_class=SensorStateClass.MEASUREMENT,
+            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+            icon="mdi:thermometer-water",
+            precision=1,
+        )
+
+        sensor = EconextSensor(coordinator, description, device_id="circuit_2")
+
+        # From fixture, param 66 = 31.2
+        assert sensor.native_value == 31.2
 
     def test_circuit_room_temp_setpoint_sensor(self, coordinator: EconextCoordinator) -> None:
         """Test circuit room temperature setpoint sensor."""
