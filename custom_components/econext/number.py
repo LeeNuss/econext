@@ -175,35 +175,34 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+# Circuit numbers whose register follows the circuit type:
+# key -> Circuit field per type (1 radiator, 2 UFH, 3 fan coil).
+_TYPE_DEPENDENT_PARAMS: dict[str, dict[int, str]] = {
+    "heating_curve": {1: "curve_radiator_param", 2: "curve_floor_param", 3: "curve_fancoil_param"},
+    "min_setpoint_heating": {1: "min_temp_radiator_param", 2: "min_temp_floor_param", 3: "min_temp_radiator_param"},
+    "max_setpoint_heating": {1: "max_temp_radiator_param", 2: "max_temp_floor_param", 3: "max_temp_radiator_param"},
+}
+
+
 def _get_circuit_param_id(circuit, number_key: str, coordinator: EconextCoordinator | None = None) -> str | None:
     """Get the parameter ID for a circuit number entity based on its key.
 
-    For heating_curve, the param is determined by circuit type:
-    - Type 1 (radiator): uses curve_radiator_param
-    - Type 2 (UFH): uses curve_floor_param
-    - Type 3 (fan coil): uses curve_fancoil_param (if exists, else curve_floor_param)
+    The heating curve and the heating setpoint limits use a different
+    register per circuit type, see _TYPE_DEPENDENT_PARAMS. An unknown type
+    is treated as radiator.
     """
-    # For heating_curve, determine which param to use based on circuit type
-    if number_key == "heating_curve" and coordinator:
-        type_param = coordinator.get_param(circuit.type_settings_param)
-        if type_param:
-            circuit_type = type_param.get("value", 1)
-            if circuit_type == 1:  # Radiator
-                return circuit.curve_radiator_param
-            elif circuit_type == 2:  # UFH (floor heating)
-                return circuit.curve_floor_param
-            elif circuit_type == 3:  # Fan coil
-                return circuit.curve_fancoil_param
-        # Default to radiator if type unknown
-        return circuit.curve_radiator_param
+    by_type = _TYPE_DEPENDENT_PARAMS.get(number_key)
+    if by_type and coordinator:
+        circuit_type = coordinator.get_param_value(circuit.type_settings_param)
+        return getattr(circuit, by_type.get(circuit_type, by_type[1]))
 
     # Standard mappings
     mapping = {
         "comfort_temp": circuit.comfort_param,
         "eco_temp": circuit.eco_param,
         "hysteresis": circuit.hysteresis_param,
-        "max_temp_radiator": circuit.max_temp_radiator_param,
         "max_temp_heat": circuit.max_temp_heat_param,
+        "max_temp_heat_hysteresis": circuit.max_temp_heat_hysteresis_param,
         "fixed_temp": circuit.fixed_temp_param,
         "temp_reduction": circuit.temp_reduction_param,
         "curve_multiplier": circuit.curve_multiplier_param,

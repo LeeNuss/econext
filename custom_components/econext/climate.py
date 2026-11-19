@@ -60,8 +60,15 @@ class Circuit:
 
     # Settings
     hysteresis_param: str
+    # Limits of the flow setpoint. The controller keeps one pair for
+    # radiators and one for underfloor heating; the circuit type decides
+    # which pair applies.
+    min_temp_radiator_param: str
     max_temp_radiator_param: str
+    min_temp_floor_param: str
+    max_temp_floor_param: str
     max_temp_heat_param: str
+    max_temp_heat_hysteresis_param: str
     fixed_temp_param: str
     temp_reduction_param: str
     curve_multiplier_param: str
@@ -113,8 +120,12 @@ CIRCUITS = {
         flow_temp_param=None,
         room_temp_setpoint_param="91",
         hysteresis_param="240",
+        min_temp_radiator_param="241",
         max_temp_radiator_param="242",
+        min_temp_floor_param="271",
+        max_temp_floor_param="272",
         max_temp_heat_param="243",
+        max_temp_heat_hysteresis_param="244",
         fixed_temp_param="261",
         temp_reduction_param="262",
         curve_multiplier_param="263",
@@ -156,8 +167,12 @@ CIRCUITS = {
         flow_temp_param="66",
         room_temp_setpoint_param="92",
         hysteresis_param="290",
+        min_temp_radiator_param="291",
         max_temp_radiator_param="292",
+        min_temp_floor_param="321",
+        max_temp_floor_param="322",
         max_temp_heat_param="293",
+        max_temp_heat_hysteresis_param="294",
         fixed_temp_param="311",
         temp_reduction_param="312",
         curve_multiplier_param="313",
@@ -199,8 +214,12 @@ CIRCUITS = {
         flow_temp_param="67",
         room_temp_setpoint_param="93",
         hysteresis_param="340",
+        min_temp_radiator_param="341",
         max_temp_radiator_param="342",
+        min_temp_floor_param="371",
+        max_temp_floor_param="372",
         max_temp_heat_param="343",
+        max_temp_heat_hysteresis_param="344",
         fixed_temp_param="361",
         temp_reduction_param="362",
         curve_multiplier_param="363",
@@ -242,8 +261,12 @@ CIRCUITS = {
         flow_temp_param="70",
         room_temp_setpoint_param="94",
         hysteresis_param="948",
+        min_temp_radiator_param="949",
         max_temp_radiator_param="950",
+        min_temp_floor_param="979",
+        max_temp_floor_param="980",
         max_temp_heat_param="951",
+        max_temp_heat_hysteresis_param="952",
         fixed_temp_param="969",
         temp_reduction_param="970",
         curve_multiplier_param="971",
@@ -285,8 +308,12 @@ CIRCUITS = {
         flow_temp_param="71",
         room_temp_setpoint_param="95",
         hysteresis_param="999",
+        min_temp_radiator_param="1000",
         max_temp_radiator_param="1001",
+        min_temp_floor_param="1030",
+        max_temp_floor_param="1031",
         max_temp_heat_param="1002",
+        max_temp_heat_hysteresis_param="1003",
         fixed_temp_param="1020",
         temp_reduction_param="1021",
         curve_multiplier_param="1022",
@@ -328,8 +355,12 @@ CIRCUITS = {
         flow_temp_param="72",
         room_temp_setpoint_param="96",
         hysteresis_param="757",
+        min_temp_radiator_param="758",
         max_temp_radiator_param="759",
+        min_temp_floor_param="773",
+        max_temp_floor_param="774",
         max_temp_heat_param="760",
+        max_temp_heat_hysteresis_param="761",
         fixed_temp_param="763",
         temp_reduction_param="764",
         curve_multiplier_param="765",
@@ -371,8 +402,12 @@ CIRCUITS = {
         flow_temp_param="73",
         room_temp_setpoint_param="97",
         hysteresis_param="807",
+        min_temp_radiator_param="808",
         max_temp_radiator_param="809",
+        min_temp_floor_param="823",
+        max_temp_floor_param="824",
         max_temp_heat_param="810",
+        max_temp_heat_hysteresis_param="811",
         fixed_temp_param="813",
         temp_reduction_param="814",
         curve_multiplier_param="815",

@@ -17,6 +17,7 @@ from custom_components.econext.const import (
 from custom_components.econext.cooling.migrate import (
     async_ensure_fan_coil,
     async_migrate_heating_curve_unique_ids,
+    async_migrate_max_setpoint_heating_unique_ids,
     async_migrate_min_setpoint_cooling_limit_unique_id,
 )
 from custom_components.econext.coordinator import EconextCoordinator
@@ -257,3 +258,30 @@ def test_migration_moves_circuit_2_cooling_limit_onto_its_circuit():
 
     assert reg.renames == [("number.x_circuit_2_continuous_cooling", f"{uid}_circuit_2_1311")]
     assert other_controller.unique_id == f"{uid}_1309"
+
+
+def test_migration_renames_max_radiator_temperature_to_max_heating_setpoint():
+    uid = "TESTUID"
+    # Circuit 2 and circuit 6 keep their radiator limit at different offsets.
+    c2 = _RegEntry("number.x_ufh_max_radiator_temperature", f"{uid}_circuit_2_292")
+    c6 = _RegEntry("number.x_c6_max_radiator_temperature", f"{uid}_circuit_6_759")
+    max_heat = _RegEntry("number.x_ufh_max_heating_temperature", f"{uid}_circuit_2_293")
+    reg = _FakeRegistry([c2, c6, max_heat])
+
+    entry = _make_entry(uid)
+    with (
+        patch("custom_components.econext.cooling.migrate.er.async_get", return_value=reg),
+        patch(
+            "custom_components.econext.cooling.migrate.er.async_entries_for_config_entry",
+            return_value=reg.entries,
+        ),
+    ):
+        async_migrate_max_setpoint_heating_unique_ids(MagicMock(), entry)
+        # Second run finds nothing left to rename.
+        async_migrate_max_setpoint_heating_unique_ids(MagicMock(), entry)
+
+    assert reg.renames == [
+        ("number.x_ufh_max_radiator_temperature", f"{uid}_circuit_2_max_setpoint_heating"),
+        ("number.x_c6_max_radiator_temperature", f"{uid}_circuit_6_max_setpoint_heating"),
+    ]
+    assert max_heat.unique_id == f"{uid}_circuit_2_293"
